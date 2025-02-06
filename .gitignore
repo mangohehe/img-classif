@@ -13,3 +13,5 @@
 
 # ignore jupyter jopascripts
 *.ipynb_checkpoints*
+input/dataset1024
+.DS_Store
