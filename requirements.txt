@@ -39,4 +39,4 @@ tzdata==2023.3
 urllib3==2.2.3
 wheel==0.44.0
 pydicom==3.0.1
-albumentations==1.4.20
+albumentations==2.0.3

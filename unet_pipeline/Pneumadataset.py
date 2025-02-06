@@ -1,12 +1,10 @@
 import os
-
 import numpy as np
 import cv2
 import pandas as pd
-
 import torch
 from torch.utils.data import Dataset
-from albumentations.pytorch.transforms import ToTensor
+from albumentations.pytorch import ToTensorV2
 
 
 class PneumothoraxDataset(Dataset):
@@ -16,15 +14,15 @@ class PneumothoraxDataset(Dataset):
         self.transform = transform
         self.mode = mode
         
-        # change to your path
-        self.train_image_path = '{}/train/'.format(data_folder)
-        self.train_mask_path = '{}/mask/'.format(data_folder)
-        self.test_image_path = '{}/test/'.format(data_folder)
+        # Path definitions
+        self.train_image_path = os.path.join(data_folder, 'train')
+        self.train_mask_path = os.path.join(data_folder, 'mask')
+        self.test_image_path = os.path.join(data_folder, 'test')
         
         self.fold_index = None
         self.folds_distr_path = folds_distr_path
         self.set_mode(mode, fold_index)
-        self.to_tensor = ToTensor()
+        self.to_tensor = ToTensorV2()
 
     def set_mode(self, mode, fold_index):
         self.mode = mode
@@ -37,7 +35,6 @@ class PneumothoraxDataset(Dataset):
             
             self.train_list = folds.fname.values.tolist()
             self.exist_labels = folds.exist_labels.values.tolist()
-
             self.num_data = len(self.train_list)
 
         elif self.mode == 'val':
@@ -56,35 +53,58 @@ class PneumothoraxDataset(Dataset):
         if self.fold_index is None and self.mode != 'test':
             print('WRONG!!!!!!! fold index is NONE!!!!!!!!!!!!!!!!!')
             return
-        
+    
         if self.mode == 'test':
-            image = cv2.imread(os.path.join(self.test_image_path, self.test_list[index]), 1)
+            image_path = os.path.join(self.test_image_path, self.test_list[index])
+            image = cv2.imread(image_path, cv2.IMREAD_COLOR)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0  # Normalize
+    
             if self.transform:
                 sample = {"image": image}
                 sample = self.transform(**sample)
                 sample = self.to_tensor(**sample)
                 image = sample['image']
+            
             image_id = self.test_list[index].replace('.png', '')
             return image_id, image
-        
-        elif self.mode == 'train':
-            image = cv2.imread(os.path.join(self.train_image_path, self.train_list[index]), 1)
-            if self.exist_labels[index] == 0:
-                label = np.zeros((1024, 1024))
+    
+        elif self.mode in ['train', 'val']:
+            if self.mode == 'train':
+                image_path = os.path.join(self.train_image_path, self.train_list[index])
+                mask_path = os.path.join(self.train_mask_path, self.train_list[index])
+                label_exists = self.exist_labels[index]
             else:
-                label = cv2.imread(os.path.join(self.train_mask_path, self.train_list[index]), 0)           
-
-        elif self.mode == 'val':
-            image = cv2.imread(os.path.join(self.train_image_path, self.val_list[index]), 1)
-            label = cv2.imread(os.path.join(self.train_mask_path, self.val_list[index]), 0)
-
-        if self.transform:
-            sample = {"image": image, "mask": label}
-            sample = self.transform(**sample)
-            sample = self.to_tensor(**sample)
-            image, label = sample['image'], sample['mask']
-        return image, label
-         
+                image_path = os.path.join(self.train_image_path, self.val_list[index])
+                mask_path = os.path.join(self.train_mask_path, self.val_list[index])
+                label_exists = 1  # Validation should always have labels
+    
+            # Load Image
+            image = cv2.imread(image_path, cv2.IMREAD_COLOR)
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0  # Normalize
+    
+            # Load Mask
+            if label_exists == 0:
+                mask = np.zeros((1024, 1024), dtype=np.float32)
+            else:
+                mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE).astype(np.float32)
+    
+            # Ensure mask shape consistency
+            if mask.shape != (1024, 1024):
+                mask = cv2.resize(mask, (1024, 1024), interpolation=cv2.INTER_NEAREST)
+    
+            # Fix Shape Mismatch - Expand mask dimensions to match the image
+            if len(mask.shape) == 2:
+                mask = np.expand_dims(mask, axis=-1)  # Convert (H, W) → (H, W, 1)
+    
+            # Apply Transformations
+            if self.transform:
+                sample = {"image": image, "mask": mask}
+                sample = self.transform(**sample)
+                sample = self.to_tensor(**sample)
+                image, mask = sample['image'], sample['mask']
+    
+            return image, mask
+             
     def __len__(self):
         return self.num_data
 

@@ -78,7 +78,8 @@ class Learning():
         return current_loss_mean
 
     def batch_train(self, model, batch_imgs, batch_labels, batch_idx):
-        batch_imgs, batch_labels = batch_imgs.to(self.device), batch_labels.to(self.device)
+        batch_imgs = batch_imgs.to(self.device).float()
+        batch_labels = batch_labels.to(self.device)
         predicted = model(batch_imgs)
         loss = self.loss_fn(predicted, batch_labels)
 
@@ -112,7 +113,7 @@ class Learning():
         return metrics, best_metric
 
     def batch_valid(self, model, batch_imgs):
-        batch_imgs = batch_imgs.to(self.device)
+        batch_imgs = batch_imgs.to(self.device).float()
         predicted = model(batch_imgs)
         predicted = torch.sigmoid(predicted)
         return predicted
