@@ -77,18 +77,64 @@ class Learning():
                 current_loss_mean, self.optimizer.param_groups[0]['lr']))
         return current_loss_mean
 
-    def batch_train(self, model, batch_imgs, batch_labels, batch_idx):
-        batch_imgs = batch_imgs.to(self.device).float()
-        batch_labels = batch_labels.to(self.device)
-        predicted = model(batch_imgs)
-        loss = self.loss_fn(predicted, batch_labels)
+    def batch_train(self, model, batch_imgs, batch_labels, batch_idx, debug_mode=False):
+      if debug_mode:
+          print(f"\n🟢 [Batch {batch_idx}] Start batch_train()")
 
-        loss.backward()
-        if batch_idx % self.grad_accum == self.grad_accum - 1:
-            clip_grad_norm_(model.parameters(), self.grad_clip)
-            self.optimizer.step()
-            self.optimizer.zero_grad()
-        return loss.item(), predicted
+      # Move to device
+      if debug_mode:
+          print(f"🔹 Before Moving to Device - batch_imgs: {batch_imgs.shape}, batch_labels: {batch_labels.shape}")
+      
+      batch_imgs = batch_imgs.to(self.device).float()
+      batch_labels = batch_labels.to(self.device)
+
+      if debug_mode:
+          print(f"🔹 After Moving to Device - batch_imgs: {batch_imgs.shape}, batch_labels: {batch_labels.shape}")
+
+      # Check for unexpected dimensions
+      if batch_labels.dim() not in [3, 4]:
+          raise ValueError(f"❌ Unexpected batch_labels dimensions: {batch_labels.shape}")
+
+      # Fix batch_labels shape if needed
+      if batch_labels.dim() == 3:
+          batch_labels = batch_labels.unsqueeze(1)  # [B, H, W] → [B, 1, H, W]
+          if debug_mode:
+              print(f"🛠 Fixed batch_labels shape to: {batch_labels.shape}")
+
+      elif batch_labels.dim() == 4 and batch_labels.shape[1] != 1:
+          batch_labels = batch_labels.permute(0, 3, 1, 2)  # [B, H, W, 1] → [B, 1, H, W]
+          if debug_mode:
+              print(f"🛠 Reordered batch_labels shape to: {batch_labels.shape}")
+
+      # Forward pass
+      predicted = model(batch_imgs)
+
+      if debug_mode:
+          print(f"🔹 Model Output Shape (predicted): {predicted.shape}")
+
+      # Ensure predicted and batch_labels match
+      if predicted.shape != batch_labels.shape:
+          print(f"🚨 Shape Mismatch! predicted: {predicted.shape}, batch_labels: {batch_labels.shape}")
+
+      # Compute loss
+      loss = self.loss_fn(predicted, batch_labels)
+
+      if debug_mode:
+          print(f"🟣 Loss Computed: {loss.item()}")
+
+      # Backpropagation
+      loss.backward()
+      if batch_idx % self.grad_accum == self.grad_accum - 1:
+          clip_grad_norm_(model.parameters(), self.grad_clip)
+          self.optimizer.step()
+          self.optimizer.zero_grad()
+          if debug_mode:
+              print(f"✅ Updated Model Weights")
+
+      if debug_mode:
+          print(f"🟢 [Batch {batch_idx}] End batch_train() \n")
+
+      return loss.item(), predicted
 
     def valid_epoch(self, model, loader):
         tqdm_loader = tqdm(loader)

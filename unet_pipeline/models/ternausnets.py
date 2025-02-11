@@ -27,7 +27,8 @@ class DecoderBlock(nn.Module):
 
         self.block = nn.Sequential(
             ConvRelu(in_channels, middle_channels),
-            nn.ConvTranspose2d(middle_channels, out_channels, kernel_size=3, stride=2, padding=1, output_padding=1),
+            nn.ConvTranspose2d(middle_channels, out_channels,
+                               kernel_size=3, stride=2, padding=1, output_padding=1),
             nn.ReLU(inplace=True)
         )
 
@@ -59,11 +60,16 @@ class UNet11(nn.Module):
         self.conv5s = self.encoder[16]
         self.conv5 = self.encoder[18]
 
-        self.center = DecoderBlock(num_filters * 8 * 2, num_filters * 8 * 2, num_filters * 8)
-        self.dec5 = DecoderBlock(num_filters * (16 + 8), num_filters * 8 * 2, num_filters * 8)
-        self.dec4 = DecoderBlock(num_filters * (16 + 8), num_filters * 8 * 2, num_filters * 4)
-        self.dec3 = DecoderBlock(num_filters * (8 + 4), num_filters * 4 * 2, num_filters * 2)
-        self.dec2 = DecoderBlock(num_filters * (4 + 2), num_filters * 2 * 2, num_filters)
+        self.center = DecoderBlock(
+            num_filters * 8 * 2, num_filters * 8 * 2, num_filters * 8)
+        self.dec5 = DecoderBlock(
+            num_filters * (16 + 8), num_filters * 8 * 2, num_filters * 8)
+        self.dec4 = DecoderBlock(
+            num_filters * (16 + 8), num_filters * 8 * 2, num_filters * 4)
+        self.dec3 = DecoderBlock(
+            num_filters * (8 + 4), num_filters * 4 * 2, num_filters * 2)
+        self.dec2 = DecoderBlock(
+            num_filters * (4 + 2), num_filters * 2 * 2, num_filters)
         self.dec1 = ConvRelu(num_filters * (2 + 1), num_filters)
 
         self.final = nn.Conv2d(num_filters, 1, kernel_size=1)
@@ -112,9 +118,9 @@ class Interpolate(nn.Module):
         self.mode = mode
         self.scale_factor = scale_factor
         self.align_corners = align_corners
-        
+
     def forward(self, x):
-        x = self.interp(x, size=self.size, scale_factor=self.scale_factor, 
+        x = self.interp(x, size=self.size, scale_factor=self.scale_factor,
                         mode=self.mode, align_corners=self.align_corners)
         return x
 
@@ -149,28 +155,24 @@ class DecoderBlockV2(nn.Module):
 
 class AlbuNet(nn.Module):
     """
-        UNet (https://arxiv.org/abs/1505.04597) with Resnet34(https://arxiv.org/abs/1512.03385) encoder
+    UNet (https://arxiv.org/abs/1505.04597) with ResNet34 (https://arxiv.org/abs/1512.03385) encoder
+    Proposed by Alexander Buslaev: https://www.linkedin.com/in/al-buslaev/
+    """
 
-        Proposed by Alexander Buslaev: https://www.linkedin.com/in/al-buslaev/
-
+    def __init__(self, num_classes=1, num_filters=32, pretrained=False, is_deconv=False, freeze_encoder=False, debug_mode=False):
         """
-
-    def __init__(self, num_classes=1, num_filters=32, pretrained=False, is_deconv=False, freeze_encoder=False):
-        """
-        :param num_classes:
-        :param num_filters:
-        :param pretrained:
-            False - no pre-trained network is used
-            True  - encoder is pre-trained with resnet34
-        :is_deconv:
-            False: bilinear interpolation is used in decoder
-            True: deconvolution is used in decoder
+        :param num_classes: Number of output classes (1 for binary segmentation).
+        :param num_filters: Base number of filters.
+        :param pretrained: Whether to use a pre-trained ResNet34 encoder.
+        :param is_deconv: If True, uses deconvolution in the decoder instead of bilinear interpolation.
+        :param freeze_encoder: If True, the encoder's weights are frozen.
+        :param debug_mode: If True, enables detailed debug prints.
         """
         super().__init__()
         self.num_classes = num_classes
+        self.debug_mode = debug_mode  # Debug flag
 
         self.pool = nn.MaxPool2d(2, 2)
-
         self.encoder = torchvision.models.resnet34(pretrained=pretrained)
 
         for layer in self.encoder.parameters():
@@ -178,21 +180,17 @@ class AlbuNet(nn.Module):
 
         self.relu = nn.ReLU(inplace=True)
 
-        self.conv1 = nn.Sequential(self.encoder.conv1,
-                                   self.encoder.bn1,
-                                   self.encoder.relu,
-                                   self.pool)
-
+        # Encoder
+        self.conv1 = nn.Sequential(self.encoder.conv1, self.encoder.bn1, self.encoder.relu, self.pool)
         self.conv2 = self.encoder.layer1
-
         self.conv3 = self.encoder.layer2
-
         self.conv4 = self.encoder.layer3
-
         self.conv5 = self.encoder.layer4
 
+        # Center Block
         self.center = DecoderBlockV2(512, num_filters * 8 * 2, num_filters * 8, is_deconv)
 
+        # Decoder with Skip Connections
         self.dec5 = DecoderBlockV2(512 + num_filters * 8, num_filters * 8 * 2, num_filters * 8, is_deconv)
         self.dec4 = DecoderBlockV2(256 + num_filters * 8, num_filters * 8 * 2, num_filters * 8, is_deconv)
         self.dec3 = DecoderBlockV2(128 + num_filters * 8, num_filters * 4 * 2, num_filters * 2, is_deconv)
@@ -202,28 +200,79 @@ class AlbuNet(nn.Module):
         self.final = nn.Conv2d(num_filters, num_classes, kernel_size=1)
 
     def forward(self, x):
+        if self.debug_mode:
+            print(f"\n🟢 Input Shape: {x.shape} | dtype: {x.dtype} | device: {x.device}")
+
+        # Encoder
         conv1 = self.conv1(x)
+        if self.debug_mode:
+            print(f"🔹 conv1: {conv1.shape} | min: {conv1.min().item():.5f} | max: {conv1.max().item():.5f}")
+
         conv2 = self.conv2(conv1)
+        if self.debug_mode:
+            print(f"🔹 conv2: {conv2.shape} | min: {conv2.min().item():.5f} | max: {conv2.max().item():.5f}")
+
         conv3 = self.conv3(conv2)
+        if self.debug_mode:
+            print(f"🔹 conv3: {conv3.shape} | min: {conv3.min().item():.5f} | max: {conv3.max().item():.5f}")
+
         conv4 = self.conv4(conv3)
+        if self.debug_mode:
+            print(f"🔹 conv4: {conv4.shape} | min: {conv4.min().item():.5f} | max: {conv4.max().item():.5f}")
+
         conv5 = self.conv5(conv4)
+        if self.debug_mode:
+            print(f"🔹 conv5: {conv5.shape} | min: {conv5.min().item():.5f} | max: {conv5.max().item():.5f}")
 
+        # Center Block
         center = self.center(self.pool(conv5))
+        if self.debug_mode:
+            print(f"🔹 center: {center.shape} | min: {center.min().item():.5f} | max: {center.max().item():.5f}")
 
+        # Decoder with Skip Connections
+        if self.debug_mode:
+            print(f"🔄 Concat dec5: center({center.shape}) + conv5({conv5.shape})")
         dec5 = self.dec5(torch.cat([center, conv5], 1))
 
-        dec4 = self.dec4(torch.cat([dec5, conv4], 1))
-        dec3 = self.dec3(torch.cat([dec4, conv3], 1))
-        dec2 = self.dec2(torch.cat([dec3, conv2], 1))
-        dec1 = self.dec1(dec2)
-        dec0 = self.dec0(dec1)
+        if self.debug_mode:
+            print(f"🔹 dec5: {dec5.shape} | min: {dec5.min().item():.5f} | max: {dec5.max().item():.5f}")
 
+        dec4 = self.dec4(torch.cat([dec5, conv4], 1))
+        if self.debug_mode:
+            print(f"🔹 dec4: {dec4.shape} | min: {dec4.min().item():.5f} | max: {dec4.max().item():.5f}")
+
+        dec3 = self.dec3(torch.cat([dec4, conv3], 1))
+        if self.debug_mode:
+            print(f"🔹 dec3: {dec3.shape} | min: {dec3.min().item():.5f} | max: {dec3.max().item():.5f}")
+
+        dec2 = self.dec2(torch.cat([dec3, conv2], 1))
+        if self.debug_mode:
+            print(f"🔹 dec2: {dec2.shape} | min: {dec2.min().item():.5f} | max: {dec2.max().item():.5f}")
+
+        dec1 = self.dec1(dec2)
+        if self.debug_mode:
+            print(f"🔹 dec1: {dec1.shape} | min: {dec1.min().item():.5f} | max: {dec1.max().item():.5f}")
+
+        dec0 = self.dec0(dec1)
+        if self.debug_mode:
+            print(f"🔹 dec0: {dec0.shape} | min: {dec0.min().item():.5f} | max: {dec0.max().item():.5f}")
+
+        # Final output layer
+        x_out = self.final(dec0)
+        if self.debug_mode:
+            print(f"🔹 Output before activation: {x_out.shape} | min: {x_out.min().item():.5f} | max: {x_out.max().item():.5f}")
+
+        # Apply correct activation
         if self.num_classes > 1:
-            x_out = F.log_softmax(self.final(dec0), dim=1)
+            x_out = F.log_softmax(x_out, dim=1)
         else:
-            x_out = self.final(dec0)
+            x_out = torch.sigmoid(x_out)
+
+        if self.debug_mode:
+            print(f"✅ Final Output after activation: {x_out.shape} | min: {x_out.min().item():.5f} | max: {x_out.max().item():.5f}\n")
 
         return x_out
+
 
 class FbAlbuNet(nn.Module):
     """
@@ -249,7 +298,8 @@ class FbAlbuNet(nn.Module):
 
         self.pool = nn.MaxPool2d(2, 2)
 
-        self.encoder = torch.hub.load('facebookresearch/WSL-Images', 'resnext101_32x8d_wsl')
+        self.encoder = torch.hub.load(
+            'facebookresearch/WSL-Images', 'resnext101_32x8d_wsl')
 
         self.relu = nn.ReLU(inplace=True)
 
@@ -266,13 +316,19 @@ class FbAlbuNet(nn.Module):
 
         self.conv5 = self.encoder.layer4
 
-        self.center = DecoderBlockV2(2048, num_filters * 8 * 2, num_filters * 8, is_deconv)
+        self.center = DecoderBlockV2(
+            2048, num_filters * 8 * 2, num_filters * 8, is_deconv)
 
-        self.dec5 = DecoderBlockV2(2048 + num_filters * 8, num_filters * 8 * 2, num_filters * 8, is_deconv)
-        self.dec4 = DecoderBlockV2(1024 + num_filters * 8, num_filters * 8 * 2, num_filters * 8, is_deconv)
-        self.dec3 = DecoderBlockV2(512 + num_filters * 8, num_filters * 4 * 2, num_filters * 2, is_deconv)
-        self.dec2 = DecoderBlockV2(256 + num_filters * 2, num_filters * 2 * 2, num_filters * 2 * 2, is_deconv)
-        self.dec1 = DecoderBlockV2(num_filters * 2 * 2, num_filters * 2 * 2, num_filters, is_deconv)
+        self.dec5 = DecoderBlockV2(
+            2048 + num_filters * 8, num_filters * 8 * 2, num_filters * 8, is_deconv)
+        self.dec4 = DecoderBlockV2(
+            1024 + num_filters * 8, num_filters * 8 * 2, num_filters * 8, is_deconv)
+        self.dec3 = DecoderBlockV2(
+            512 + num_filters * 8, num_filters * 4 * 2, num_filters * 2, is_deconv)
+        self.dec2 = DecoderBlockV2(
+            256 + num_filters * 2, num_filters * 2 * 2, num_filters * 2 * 2, is_deconv)
+        self.dec1 = DecoderBlockV2(
+            num_filters * 2 * 2, num_filters * 2 * 2, num_filters, is_deconv)
         self.dec0 = ConvRelu(num_filters, num_filters)
         self.final = nn.Conv2d(num_filters, num_classes, kernel_size=1)
 
@@ -281,7 +337,7 @@ class FbAlbuNet(nn.Module):
         conv2 = self.conv2(conv1)
         conv3 = self.conv3(conv2)
         conv4 = self.conv4(conv3)
-        
+
         conv5 = self.conv5(conv4)
 
         center = self.center(self.pool(conv5))
@@ -300,7 +356,7 @@ class FbAlbuNet(nn.Module):
             x_out = self.final(dec0)
 
         return x_out
-    
+
 
 class UNet16(nn.Module):
     def __init__(self, num_classes=1, num_filters=32, pretrained=False, is_deconv=False):
@@ -354,12 +410,17 @@ class UNet16(nn.Module):
                                    self.encoder[28],
                                    self.relu)
 
-        self.center = DecoderBlockV2(512, num_filters * 8 * 2, num_filters * 8, is_deconv)
+        self.center = DecoderBlockV2(
+            512, num_filters * 8 * 2, num_filters * 8, is_deconv)
 
-        self.dec5 = DecoderBlockV2(512 + num_filters * 8, num_filters * 8 * 2, num_filters * 8, is_deconv)
-        self.dec4 = DecoderBlockV2(512 + num_filters * 8, num_filters * 8 * 2, num_filters * 8, is_deconv)
-        self.dec3 = DecoderBlockV2(256 + num_filters * 8, num_filters * 4 * 2, num_filters * 2, is_deconv)
-        self.dec2 = DecoderBlockV2(128 + num_filters * 2, num_filters * 2 * 2, num_filters, is_deconv)
+        self.dec5 = DecoderBlockV2(
+            512 + num_filters * 8, num_filters * 8 * 2, num_filters * 8, is_deconv)
+        self.dec4 = DecoderBlockV2(
+            512 + num_filters * 8, num_filters * 8 * 2, num_filters * 8, is_deconv)
+        self.dec3 = DecoderBlockV2(
+            256 + num_filters * 8, num_filters * 4 * 2, num_filters * 2, is_deconv)
+        self.dec2 = DecoderBlockV2(
+            128 + num_filters * 2, num_filters * 2 * 2, num_filters, is_deconv)
         self.dec1 = ConvRelu(64 + num_filters, num_filters)
         self.final = nn.Conv2d(num_filters, num_classes, kernel_size=1)
 

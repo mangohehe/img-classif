@@ -15,3 +15,4 @@
 *.ipynb_checkpoints*
 input/dataset1024
 .DS_Store
+/unet_pipeline/experiments/albunet_valid/checkpoints

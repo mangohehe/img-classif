@@ -11,22 +11,45 @@ except ImportError:  # py3k
 
 eps = 1e-6
 
+def soft_dice_loss(outputs, targets, per_image=False, per_channel=False, debug_mode=False):
+    if debug_mode:
+        print(f"Before Reshaping - outputs: {outputs.shape}, targets: {targets.shape}")
 
-def soft_dice_loss(outputs, targets, per_image=False, per_channel=False):
+    # Fix dimension mismatch
+    if targets.dim() == 3:
+        targets = targets.unsqueeze(1)  # Ensure targets match outputs shape
+        if debug_mode:
+            print(f"🛠 Fixed targets shape to: {targets.shape}")
+
+    if outputs.dim() == 3:
+        outputs = outputs.unsqueeze(1)  # Ensure outputs keep channel dim
+        if debug_mode:
+            print(f"🛠 Fixed outputs shape to: {outputs.shape}")
+
+    # Check for mismatch after fixing
+    if outputs.shape != targets.shape:
+        print(f"🚨 MISMATCH after fixing: outputs {outputs.shape} vs targets {targets.shape}")
+
     batch_size, n_channels = outputs.size(0), outputs.size(1)
-    
     eps = 1e-6
-    n_parts = 1
-    if per_image:
-        n_parts = batch_size
+    n_parts = batch_size if per_image else 1
     if per_channel:
         n_parts = batch_size * n_channels
-    
+
     dice_target = targets.contiguous().view(n_parts, -1).float()
     dice_output = outputs.contiguous().view(n_parts, -1)
+
+    if debug_mode:
+        print(f"🛠 Fixed Dice shapes: dice_output {dice_output.shape}, dice_target {dice_target.shape}")
+
+    # Compute Dice loss
     intersection = torch.sum(dice_output * dice_target, dim=1)
     union = torch.sum(dice_output, dim=1) + torch.sum(dice_target, dim=1) + eps
     loss = (1 - (2 * intersection + eps) / union).mean()
+
+    if debug_mode:
+        print(f"🟣 Dice Loss Computed: {loss.item()}")
+
     return loss
 
 def dice_metric(preds, trues, per_image=False, per_channel=False):
