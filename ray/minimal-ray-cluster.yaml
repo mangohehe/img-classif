@@ -1,4 +1,4 @@
-cluster_name: arm-minimal-header-only
+cluster_name: minimal-cluster
 provider:
   type: gcp
   region: us-west2
@@ -9,12 +9,7 @@ file_mounts: {}
 
 available_node_types:
   ray_head_gpu:
-    # The resources provided by this node type.
     resources: { "CPU": 1, "GPU": 1 }
-    # Provider-specific config for the head node, e.g. instance type. By default
-    # Ray will auto-configure unspecified fields such as subnets and ssh-keys.
-    # For more documentation on available fields, see:
-    # https://cloud.google.com/compute/docs/reference/rest/v1/instances/insert
     node_config:
       machineType: n1-standard-2
       disks:
@@ -23,9 +18,7 @@ available_node_types:
           type: PERSISTENT
           initializeParams:
             diskSizeGb: 70
-            # See https://cloud.google.com/compute/docs/images for more images
             sourceImage: projects/ml-images/global/images/c0-deeplearning-common-cu121-v20231209-debian-11
-      # Make sure to set scheduling->onHostMaintenance to TERMINATE when GPUs are present
       guestAccelerators:
         - acceleratorType: nvidia-tesla-t4
           acceleratorCount: 1
@@ -36,10 +29,38 @@ available_node_types:
       scheduling:
         - onHostMaintenance: TERMINATE
 
-# Initialization commands are simplified since dependencies are included in the custom Docker image.
+  ray_worker_gpu:
+    resources: { "CPU": 2, "GPU": 1 }
+    min_workers: 1
+    max_workers: 1
+    node_config:
+      machineType: n1-standard-4
+      disks:
+        - boot: true
+          autoDelete: true
+          type: PERSISTENT
+          initializeParams:
+            diskSizeGb: 70
+            sourceImage: projects/ml-images/global/images/c0-deeplearning-common-cu121-v20231209-debian-11
+      guestAccelerators:
+        - acceleratorType: nvidia-tesla-t4
+          acceleratorCount: 1
+      metadata:
+        items:
+          - key: install-nvidia-driver
+            value: "True"
+      scheduling:
+        - onHostMaintenance: TERMINATE
+
+# Disable autoscaling
+max_workers: 1
+
+# If a node is idle for this many minutes, it will be removed.
+idle_timeout_minutes: 30
+
+# Initialization commands
 initialization_commands: []
 
-# List of shell commands to run to set up nodes.
 setup_commands:
   - echo "Starting setup commands" >> /tmp/init.log
   - sudo apt-get update && sudo apt-get install -y wget bzip2 curl software-properties-common || echo "Failed to install dependencies" >> /tmp/init.log
@@ -56,17 +77,16 @@ setup_commands:
   - source ~/.bashrc && conda activate ray_env && conda install -y pip || echo "Failed to install pip in ray_env" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && pip install ray[default] cryptography >> /tmp/init.log 2>&1 || echo "Failed to install Ray and dependencies" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && pip install google-cloud-storage >> /tmp/init.log 2>&1 || echo "Failed to install Google Cloud Storage" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && conda env export > /home/ray/environment.yml || echo "Failed to export Conda environment" >> /tmp/init.log
+  - source ~/.bashrc && conda activate ray_env && conda env export > /home/fgaolscc/environment.yml || echo "Failed to export Conda environment" >> /tmp/init.log
   - echo "Completed setup commands" >> /tmp/init.log
 
 head_node_type: ray_head_gpu
 
-# Custom commands that will be run on the head node after common setup.
 head_setup_commands:
   - echo "Starting head setup commands" >> /tmp/init.log
   - source ~/.bashrc
   - echo "Re-creating environment on head node..." >> /tmp/init.log
-  - conda env create -f /home/ray/environment.yml >> /tmp/init.log 2>&1 || echo "Failed to create Conda environment from environment.yml" >> /tmp/init.log
+  - conda env create -f /home/fgaolscc/environment.yml >> /tmp/init.log 2>&1 || echo "Failed to create Conda environment from environment.yml" >> /tmp/init.log
   - echo "Installing additional head dependencies..." >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && pip install google-api-python-client==1.7.8 >> /tmp/init.log 2>&1 || echo "Failed to install head-specific dependencies" >> /tmp/init.log
   - echo "Completed head setup commands" >> /tmp/init.log
@@ -81,5 +101,22 @@ head_start_ray_commands:
     --port=6379
     --dashboard-port=8265
     --object-manager-port=8076
-    --autoscaling-config=~/ray_bootstrap_config.yaml
     --dashboard-host=0.0.0.0
+    --autoscaling-config=~/ray_bootstrap_config.yaml
+    --block
+
+worker_setup_commands:
+  - echo "Starting worker setup commands" >> /tmp/init.log
+  - source ~/.bashrc && conda activate ray_env
+  - conda env create -f /home/ray/environment.yml || echo "Failed to recreate Conda environment on worker" >> /tmp/init.log
+  - echo "Completed worker setup commands" >> /tmp/init.log
+
+worker_start_ray_commands:
+  - source ~/.bashrc && conda activate ray_env && ray stop
+  - >-
+    source ~/.bashrc && conda activate ray_env &&
+    ulimit -n 65536;
+    ray start
+    --address=$RAY_HEAD_IP:6379
+    --object-manager-port=8076
+    --block

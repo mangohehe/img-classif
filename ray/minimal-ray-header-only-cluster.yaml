@@ -1,0 +1,85 @@
+cluster_name: minimal-header-only
+provider:
+  type: gcp
+  region: us-west2
+  availability_zone: us-west2-c
+  project_id: llm-ft-442520
+
+file_mounts: {}
+
+available_node_types:
+  ray_head_gpu:
+    # The resources provided by this node type.
+    resources: { "CPU": 1, "GPU": 1 }
+    # Provider-specific config for the head node, e.g. instance type. By default
+    # Ray will auto-configure unspecified fields such as subnets and ssh-keys.
+    # For more documentation on available fields, see:
+    # https://cloud.google.com/compute/docs/reference/rest/v1/instances/insert
+    node_config:
+      machineType: n1-standard-2
+      disks:
+        - boot: true
+          autoDelete: true
+          type: PERSISTENT
+          initializeParams:
+            diskSizeGb: 70
+            # See https://cloud.google.com/compute/docs/images for more images
+            sourceImage: projects/ml-images/global/images/c0-deeplearning-common-cu121-v20231209-debian-11
+      # Make sure to set scheduling->onHostMaintenance to TERMINATE when GPUs are present
+      guestAccelerators:
+        - acceleratorType: nvidia-tesla-t4
+          acceleratorCount: 1
+      metadata:
+        items:
+          - key: install-nvidia-driver
+            value: "True"
+      scheduling:
+        - onHostMaintenance: TERMINATE
+
+# Initialization commands are simplified since dependencies are included in the custom Docker image.
+initialization_commands: []
+
+# List of shell commands to run to set up nodes.
+setup_commands:
+  - echo "Starting setup commands" >> /tmp/init.log
+  - sudo apt-get update && sudo apt-get install -y wget bzip2 curl software-properties-common || echo "Failed to install dependencies" >> /tmp/init.log
+  - echo "Installing Miniforge..." >> /tmp/init.log
+  - wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh -O miniforge.sh || echo "Failed to download Miniforge" >> /tmp/init.log
+  - bash miniforge.sh -b -p $HOME/miniforge3 || echo "Failed to install Miniforge" >> /tmp/init.log
+  - rm -f miniforge.sh
+  - $HOME/miniforge3/bin/conda init bash || echo "Failed to initialize Conda" >> /tmp/init.log
+  - source ~/.bashrc
+  - conda config --set auto_activate_base false || echo "Failed to configure Conda" >> /tmp/init.log
+  - echo "Creating Conda environment ray_env..." >> /tmp/init.log
+  - conda create -n ray_env python=3.10 -y || echo "Failed to create Conda environment" >> /tmp/init.log
+  - echo "Activating ray_env and installing dependencies..." >> /tmp/init.log
+  - source ~/.bashrc && conda activate ray_env && conda install -y pip || echo "Failed to install pip in ray_env" >> /tmp/init.log
+  - source ~/.bashrc && conda activate ray_env && pip install ray[default] cryptography >> /tmp/init.log 2>&1 || echo "Failed to install Ray and dependencies" >> /tmp/init.log
+  - source ~/.bashrc && conda activate ray_env && pip install google-cloud-storage >> /tmp/init.log 2>&1 || echo "Failed to install Google Cloud Storage" >> /tmp/init.log
+  - source ~/.bashrc && conda activate ray_env && conda env export > /home/ray/environment.yml || echo "Failed to export Conda environment" >> /tmp/init.log
+  - echo "Completed setup commands" >> /tmp/init.log
+
+head_node_type: ray_head_gpu
+
+# Custom commands that will be run on the head node after common setup.
+head_setup_commands:
+  - echo "Starting head setup commands" >> /tmp/init.log
+  - source ~/.bashrc
+  - echo "Re-creating environment on head node..." >> /tmp/init.log
+  - conda env create -f /home/ray/environment.yml >> /tmp/init.log 2>&1 || echo "Failed to create Conda environment from environment.yml" >> /tmp/init.log
+  - echo "Installing additional head dependencies..." >> /tmp/init.log
+  - source ~/.bashrc && conda activate ray_env && pip install google-api-python-client==1.7.8 >> /tmp/init.log 2>&1 || echo "Failed to install head-specific dependencies" >> /tmp/init.log
+  - echo "Completed head setup commands" >> /tmp/init.log
+
+head_start_ray_commands:
+  - source ~/.bashrc && conda activate ray_env && ray stop
+  - >-
+    source ~/.bashrc && conda activate ray_env &&
+    ulimit -n 65536;
+    ray start
+    --head
+    --port=6379
+    --dashboard-port=8265
+    --object-manager-port=8076
+    --autoscaling-config=~/ray_bootstrap_config.yaml
+    --dashboard-host=0.0.0.0
