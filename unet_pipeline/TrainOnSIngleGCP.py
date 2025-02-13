@@ -1,6 +1,11 @@
-# python TrainOnSIngleGCP.py experiments/albunet_valid/train_config_part0.yaml --gcp_bucket "img-classif-training-dataset" 
+# python TrainOnSIngleGCP.py
+# experiments/albunet_valid/train_config_part0.yaml --gcp_bucket
+# "img-classif-training-dataset"
 import argparse
+import tempfile
 import logging
+import shutil
+import subprocess
 
 import pandas as pd
 import numpy as np
@@ -18,9 +23,71 @@ from pathlib import Path
 from Pneumadataset import PneumothoraxDataset, PneumoSampler
 from Learning import Learning
 from utils.helpers import load_yaml, init_seed, init_logger
-from GCPStorageHandler import GCPStorageHandler
-# from Evaluation import apply_deep_thresholds, search_deep_thresholds, dice_round_fn, search_thresholds
+# from Evaluation import apply_deep_thresholds, search_deep_thresholds,
+# dice_round_fn, search_thresholds
+from google.cloud import storage
 
+
+def list_files_in_bucket(bucket_name):
+    """Lists all files in the given GCP bucket."""
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+    blobs = bucket.list_blobs()
+
+    return [blob.name for blob in blobs]
+
+def check_local_directory_exists(local_data_dir, remote_data_dir):
+    """Check if the remote data directory already exists in the local path."""
+    local_remote_data_dir = local_data_dir 
+    if local_remote_data_dir.exists() and any(local_remote_data_dir.iterdir()):
+        print(f"Local directory {local_remote_data_dir} already exists.")
+        return True
+    else:
+        print(f"Local directory {local_remote_data_dir} does not exist.")
+        return False
+
+def check_remote_directory_exists(bucket_name, remote_data_dir):
+    """Check if the remote data directory exists in the GCP bucket."""
+    remote_path = f"gs://{bucket_name}/{remote_data_dir}"
+    try:
+        # Run gsutil to check if the remote directory exists
+        result = subprocess.run(['gsutil', 'ls', remote_path], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if result.stdout:
+            print(f"Remote directory {remote_path} exists.")
+            return True
+    except subprocess.CalledProcessError as e:
+        print(f"Error checking remote directory {remote_path}: {e}")
+        return False
+    return False
+
+def copy_folder_from_gcp(bucket_name, remote_data_dir, local_data_dir):
+    """Copy an entire folder from GCP bucket to local directory using gsutil."""
+    # Check if the local directory contains files
+    
+    # Check if the remote_data_dir already exists locally
+    if check_local_directory_exists(local_data_dir, remote_data_dir):
+        print(f"Skipping copy: The directory {remote_data_dir} already exists locally.")
+        return  # Skip the copy if the directory exists
+
+    # Check if the remote directory exists in the GCP bucket
+    if not check_remote_directory_exists(bucket_name, remote_data_dir):
+        print(f"Remote directory {remote_data_dir} does not exist in the bucket.")
+        return  # Skip the copy if the remote directory doesn't exist
+    
+    # Ensure the local directory exists
+    local_data_dir.mkdir(parents=True, exist_ok=True)
+
+    # Define the remote and local paths
+    remote_path = f"gs://{bucket_name}/{remote_data_dir}"
+    local_path = str(local_data_dir)  # Convert Path object to string for gsutil
+
+    # Run gsutil command to copy the folder recursively
+    try:
+        # Use subprocess to run the gsutil command
+        subprocess.run(['gsutil', '-m', 'cp', '-r', remote_path + '/', local_path], check=True)
+        print(f"Successfully copied {remote_path} to {local_path}")
+    except subprocess.CalledProcessError as e:
+        print(f"Error copying {remote_path} to {local_path}: {e}")
 
 def argparser():
     parser = argparse.ArgumentParser(description='Pneumatorax pipeline')
@@ -112,32 +179,47 @@ def train_fold(
     ).run_train(model, train_dataloader, valid_dataloader)
 
 
+# Set up logging for debugging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+
 def main():
     args = argparser()
     config_folder = Path(args.train_cfg.strip("/"))
     experiment_folder = config_folder.parents[0]
 
-    # Initialize GCP Storage Handler
-    gcp_handler = GCPStorageHandler(args.gcp_bucket)
+    # Load the configuration file
+    train_config = load_yaml(config_folder)
 
-    # Download dataset from GCP bucket to a local temporary directory
-    local_data_dir = Path(tempfile.mkdtemp())
-    remote_data_dir = train_config['DATA_DIRECTORY']
-    gcp_handler.download_folder(remote_data_dir, local_data_dir)
+    # List files in the GCP bucket
+    bucket_name = args.gcp_bucket
+    files = list_files_in_bucket(bucket_name)
+
+    # Resolve the local data directory
+    local_data_dir = Path(train_config['DATA_DIRECTORY']).resolve()
+    # Remote data directory in GCP (provided by you)
+    remote_data_dir = "dataset/dataset1024"  # You mentioned your dataset is under this folder
+
+    # GCP bucket name (you specified this earlier)
+    bucket_name = "img-classif-training-dataset"  # GCP bucket name
+
+    # Copy the entire folder from remote to local
+    copy_folder_from_gcp(bucket_name, remote_data_dir, local_data_dir)
 
     # Update the data directory in the config to use the local path
     train_config['DATA_DIRECTORY'] = str(local_data_dir)
 
-    # Load the rest of the configuration
-    train_config = load_yaml(config_folder)
+    # Set up logging
     log_dir = Path(experiment_folder, train_config['LOGGER_DIR'])
     log_dir.mkdir(exist_ok=True, parents=True)
-
     main_logger = init_logger(log_dir, 'train_main.log')
-    seed = train_config['SEED']
-    init_seed(seed)
+
+    # Set random seed
+    init_seed(train_config['SEED'])
     main_logger.info(train_config)
 
+    # Handle GPU device settings
     if "DEVICE_LIST" in train_config:
         os.environ["CUDA_VISIBLE_DEVICES"] = ','.join(
             map(str, train_config["DEVICE_LIST"]))
@@ -145,8 +227,13 @@ def main():
     pipeline_name = train_config['PIPELINE_NAME']
     dataset_folder = train_config['DATA_DIRECTORY']
 
-    train_transform = albu.load(train_config['TRAIN_TRANSFORMS'])
-    valid_transform = albu.load(train_config['VALID_TRANSFORMS'])
+    # Validate and load transformations
+    if 'TRAIN_TRANSFORMS' in train_config and 'VALID_TRANSFORMS' in train_config:
+        train_transform = albu.load(train_config['TRAIN_TRANSFORMS'])
+        valid_transform = albu.load(train_config['VALID_TRANSFORMS'])
+    else:
+        raise KeyError(
+            "Missing TRAIN_TRANSFORMS or VALID_TRANSFORMS in train_config")
 
     non_empty_mask_proba = train_config.get('NON_EMPTY_MASK_PROBA', 0)
     use_sampler = train_config['USE_SAMPLER']
@@ -156,12 +243,15 @@ def main():
     batch_size = train_config['BATCH_SIZE']
     n_folds = train_config['FOLD']['NUMBER']
 
-    usefolds = map(str, train_config['FOLD']['USEFOLDS'])
+    # Ensure correct handling of fold IDs
+    usefolds = list(map(str, train_config['FOLD']['USEFOLDS']))
 
+    # Load binarizer and evaluation function
     binarizer_module = importlib.import_module(
         train_config['MASK_BINARIZER']['PY'])
     binarizer_class = getattr(
-        binarizer_module, train_config['MASK_BINARIZER']['CLASS'])
+        binarizer_module,
+        train_config['MASK_BINARIZER']['CLASS'])
     binarizer_fn = binarizer_class(**train_config['MASK_BINARIZER']['ARGS'])
 
     eval_module = importlib.import_module(
@@ -173,6 +263,7 @@ def main():
     for fold_id in usefolds:
         main_logger.info('Start training of {} fold....'.format(fold_id))
 
+        # Train dataset and sampler
         train_dataset = PneumothoraxDataset(
             data_folder=dataset_folder, mode='train',
             transform=train_transform, fold_index=fold_id,
@@ -180,6 +271,7 @@ def main():
         )
         train_sampler = PneumoSampler(
             folds_distr_path, fold_id, non_empty_mask_proba)
+
         if use_sampler:
             train_dataloader = DataLoader(
                 dataset=train_dataset, batch_size=batch_size,
@@ -191,6 +283,7 @@ def main():
                 num_workers=num_workers, shuffle=True
             )
 
+        # Validation dataset and dataloader
         valid_dataset = PneumothoraxDataset(
             data_folder=dataset_folder, mode='val',
             transform=valid_transform, fold_index=str(fold_id),
@@ -201,6 +294,7 @@ def main():
             num_workers=num_workers, shuffle=False
         )
 
+        # Start training
         train_fold(
             train_config, experiment_folder, pipeline_name, log_dir, fold_id,
             train_dataloader, valid_dataloader,
