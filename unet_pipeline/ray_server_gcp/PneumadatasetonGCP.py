@@ -5,6 +5,7 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 from albumentations.pytorch import ToTensorV2
+from torch.utils.data.sampler import Sampler
 import albumentations as albu
 from google.cloud import storage
 from PIL import Image
@@ -105,10 +106,6 @@ class PneumothoraxDatasetonGCP(Dataset):  # Renamed for consistency
         if self.max_samples:
             return min(self.num_data, self.max_samples)
         return self.num_data
-
-from torch.utils.data.sampler import Sampler
-import pandas as pd
-import numpy as np
 
 class PneumoSampleronGCP(Sampler):  # Renamed for consistency
     _folds_df = None  # Class-level attribute

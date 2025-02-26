@@ -4,8 +4,8 @@ import cv2
 import pandas as pd
 import torch
 from torch.utils.data import Dataset
+from torch.utils.data.sampler import Sampler
 from albumentations.pytorch import ToTensorV2
-
 
 class PneumothoraxDataset(Dataset):
     def __init__(self, data_folder, mode, transform=None,
@@ -109,7 +109,6 @@ class PneumothoraxDataset(Dataset):
         return self.num_data
 
 
-from torch.utils.data.sampler import Sampler
 class PneumoSampler(Sampler):
     def __init__(self, folds_distr_path, fold_index, demand_non_empty_proba):
         assert demand_non_empty_proba > 0, 'frequensy of non-empty images must be greater then zero'

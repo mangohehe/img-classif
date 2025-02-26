@@ -1,0 +1,30 @@
+# Data paths
+LOCAL_DATA_DIR: '/Users/fenggao/Library/CloudStorage/GoogleDrive-2023isanewjourney@gmail.com/My Drive/kaggle/img-classif/input/dataset1024'  # Local dataset path
+
+# Training and inference settings
+SEED: 42
+NUM_WORKERS: 0  # Set to 0 for local execution to avoid multiprocessing issues
+DEVICE: cpu  # Use CPU for local execution
+BATCH_SIZE: 1  # Reduce batch size for local execution
+
+# Model configuration
+MODEL:
+  PY: models.ternausnets
+  CLASS: AlbuNet
+  ARGS:
+    pretrained: False
+
+# Checkpoint configuration
+CHECKPOINTS:
+  LOCAL_CHECKPOINT_DIR: '/Users/fenggao/Library/CloudStorage/GoogleDrive-2023isanewjourney@gmail.com/My Drive/kaggle/img-classif/unet_pipeline/experiments/albunet_valid/checkpoints'  
+  CHECKPOINT_NAME: albunet_1024_fold1.pth  
+
+# Test transforms
+TEST_TRANSFORMS: "/Users/fenggao/Library/CloudStorage/GoogleDrive-2023isanewjourney@gmail.com/My Drive/kaggle/img-classif/unet_pipeline/transforms/valid_transforms_1024_old.json"
+
+# Augmentation and post-processing
+FLIP: False  # Whether to use flipping during inference
+
+# Result saving
+RESULT: result_top3.pkl  # Result file name
+RESULT_FOLDER: ./results  # Folder to save results

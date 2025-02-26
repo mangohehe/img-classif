@@ -74,13 +74,84 @@ def inference_model(model, loader, device, use_flip):
             mask_dict[name] = mask.astype(np.float32)
     return mask_dict
     
+def is_directory_writable(directory: str) -> bool:
+    """Check if the given directory is writable."""
+    try:
+        test_file = os.path.join(directory, ".test_write")
+        with open(test_file, "w") as f:
+            f.write("test")
+        os.remove(test_file)
+        return True
+    except (OSError, IOError):
+        return False
 
+import os
+import pickle
+
+def save_results(mask_dict, result_path):
+    """
+    Saves the mask_dict to the specified result_path with debugging information.
+
+    Args:
+        mask_dict (dict): The dictionary containing inference results.
+        result_path (str): The file path where results should be saved.
+    """
+    print(f"Attempting to save results to: {result_path}")
+
+    # Check if mask_dict has any data
+    if not mask_dict:
+        print("Warning: mask_dict is empty! No results to save.")
+        return
+
+    print(f"mask_dict contains {len(mask_dict)} entries.")
+
+    # Get the directory of the result file
+    result_dir = os.path.dirname(result_path)
+
+    # Check if the result directory exists, create if not
+    if not os.path.exists(result_dir):
+        print(f"Warning: Result directory '{result_dir}' does not exist. Attempting to create it...")
+        try:
+            os.makedirs(result_dir, exist_ok=True)
+            print(f"Successfully created directory: {result_dir}")
+        except Exception as e:
+            print(f"Error: Failed to create directory {result_dir}. Exception: {e}")
+            return
+
+    # Check if the directory is writable
+    if not os.access(result_dir, os.W_OK):
+        print(f"Error: Directory '{result_dir}' is not writable!")
+        return
+
+    # Try saving the file with exception handling
+    try:
+        with open(result_path, 'wb') as handle:
+            pickle.dump(mask_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        print(f"Successfully saved results to {result_path}")
+    except Exception as e:
+        print(f"Error: Failed to save results. Exception: {e}")
+
+    
 def main():
     args = argparser()
     config_path = Path(args.cfg.strip("/"))
     experiment_folder = config_path.parents[0]
     inference_config = load_yaml(config_path)
     print(inference_config)
+
+    if 'RESULT_FOLDER' in inference_config:
+        output_dir = inference_config['RESULT_FOLDER']
+        if is_directory_writable(output_dir):
+            print(f"The directory '{output_dir}' is writable.")
+        else:
+            print(f"The directory '{output_dir}' is NOT writable.")
+        result_path = Path(output_dir, inference_config['RESULT'])
+    else:
+        if is_directory_writable(experiment_folder):
+            print(f"The directory '{experiment_folder}' is writable.")
+        else:
+            print(f"The directory '{experiment_folder}' is NOT writable.")
+        result_path = Path(experiment_folder, inference_config['RESULT'])
     
     batch_size = inference_config['BATCH_SIZE']
     device = inference_config['DEVICE']
@@ -114,13 +185,7 @@ def main():
         for name, mask in current_mask_dict.items():
             mask_dict[name] = (mask_dict[name] * pred_idx + mask) / (pred_idx + 1)
 
-    if 'RESULT_FOLDER' in inference_config:
-        result_path = Path(inference_config['RESULT_FOLDER'], inference_config['RESULT'])
-    else:
-        result_path = Path(experiment_folder, inference_config['RESULT'])
-
-    with open(result_path, 'wb') as handle:
-        pickle.dump(mask_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    save_results(mask_dict, result_path)
         
 if __name__ == "__main__":
     main()
