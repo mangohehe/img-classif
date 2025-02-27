@@ -20,7 +20,7 @@ from tqdm import tqdm
 import os
 from pathlib import Path
 
-from unet_pipeline.utils.Pneumadataset import PneumothoraxDataset, PneumoSampler
+from unet_pipeline.train.Pneumadataset import PneumothoraxDataset, PneumoSampler
 from unet_pipeline.train.Learning import Learning
 from utils.helpers import load_yaml, init_seed, init_logger
 # from Evaluation import apply_deep_thresholds, search_deep_thresholds,

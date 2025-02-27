@@ -15,7 +15,7 @@ from tqdm import tqdm
 import ray
 from google.cloud import storage
 
-from unet_pipeline.utils.Pneumadataset import PneumothoraxDataset, PneumoSampler
+from unet_pipeline.train.Pneumadataset import PneumothoraxDataset, PneumoSampler
 from unet_pipeline.train.Learning import Learning
 from utils.helpers import load_yaml, init_seed, init_logger
 

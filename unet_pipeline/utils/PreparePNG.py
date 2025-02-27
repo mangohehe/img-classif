@@ -15,7 +15,7 @@ import shutil
 from joblib import Parallel, delayed
 
 import argparse
-from unet_pipeline.utils.MaskFunctions import rle2mask, mask2rle
+from unet_pipeline.train.MaskFunctions import rle2mask, mask2rle
 
 
 def argparser():

@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 import albumentations as albu 
 import torch
 
-from unet_pipeline.utils.Pneumadataset import PneumothoraxDataset
+from unet_pipeline.train.Pneumadataset import PneumothoraxDataset
 from utils.helpers import load_yaml, init_seed, init_logger
 
 

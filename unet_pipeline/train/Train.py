@@ -11,12 +11,20 @@ import torch
 import importlib
 import functools
 from tqdm import tqdm
-import os
+import os, sys
 from pathlib import Path
 
-from unet_pipeline.utils.Pneumadataset import PneumothoraxDataset, PneumoSampler
-from unet_pipeline.train.Learning import Learning
-from utils.helpers import load_yaml, init_seed, init_logger
+
+# Get the current file's directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# Get the parent directory
+parent_dir = os.path.dirname(current_dir)
+# Add the parent directory to sys.path
+sys.path.append(parent_dir)
+
+from Pneumadataset import PneumothoraxDataset, PneumoSampler
+from Learning import Learning
+from utils.Helpers import load_yaml, init_seed, init_logger
 # from Evaluation import apply_deep_thresholds, search_deep_thresholds, dice_round_fn, search_thresholds
 
 
