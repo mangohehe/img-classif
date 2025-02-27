@@ -1,6 +1,6 @@
 import requests
 import numpy as np
-from tqdm import tqdm
+from tqdm import tqdm  # Import tqdm for progress bar
 from typing import Dict
 from pathlib import Path
 import pickle
@@ -27,12 +27,14 @@ def run_inference(
     """Run inference on the dataset using the Ray Serve deployment."""
     mask_dict = {}
 
-    # Iterate over the dataset in batches
-    for batch in tqdm(dataset.iter_batches(batch_size=batch_size), desc="Inference"):
-        images = batch["image"]
-        image_ids = [f"image_{i}" for i in range(len(images))]  # Generate dummy IDs for now
+    # Calculate total number of batches
+    total_batches = (dataset.count() + batch_size - 1) // batch_size
 
-        # Send inference request
+    # Iterate over the dataset in batches with a progress bar
+    for batch in tqdm(dataset.iter_batches(batch_size=batch_size), total=total_batches, desc="Inference", unit="batch"):
+        print(batch)  # Debug: Check if batches are being yielded
+        images = batch["image"]
+        image_ids = [f"image_{i}" for i in range(len(images))]
         masks = send_inference_request(np.array(images), use_flip)
         for name, mask in zip(image_ids, masks):
             mask_dict[name] = mask.astype(np.float32)

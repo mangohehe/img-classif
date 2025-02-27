@@ -18,7 +18,7 @@ import torch
 from torch.utils.data import DataLoader, Subset
 import ray
 
-from Pneumadataset import PneumothoraxDataset
+from unet_pipeline.utils.Pneumadataset import PneumothoraxDataset
 # Assuming these are defined
 from utils.helpers import load_yaml, init_seed, init_logger
 

@@ -61,7 +61,8 @@ def main() -> None:
         start_serve(inference_config, str(local_checkpoint_path / inference_config['CHECKPOINTS']['CHECKPOINT_NAME']), device)
 
     # Load dataset
-    dataset = PneumothoraxDataset(data_folder=local_data_dir, mode='test', transform=transform)
+    logging.info("Loading dataset and Processing...")
+    dataset = PneumothoraxDataset(data_folder=local_data_dir, transform=transform)
     ray_dataset = dataset.get_dataset()
 
     # Run inference

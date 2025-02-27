@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from collections import defaultdict
 
-from utils.mask_functions import mask2rle
+from unet_pipeline.utils.MaskFunctions import mask2rle
 from utils.helpers import load_yaml
 
 def argparser():
