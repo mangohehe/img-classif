@@ -1,3 +1,4 @@
+# python ray_server_gcp/Main.py --cfg ray_server_gcp/inference_gcp.yaml --transform ray_server_gcp/valid_transforms_1024_old.json
 import sys
 import os
 # Get the current file's directory
@@ -29,10 +30,10 @@ def argparser() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Pneumothorax pipeline')
     parser.add_argument('--cfg', type=str, required=True, help='Path to the configuration YAML file')
     parser.add_argument('--local', action='store_true', help='Run in local mode (skip GCP and Ray)')
-    parser.add_argument('--transform', type=str, type=str, help='Path to the transformation YAML file')
+    parser.add_argument('--transform', type=str, help='Path to the transformation YAML file')
     return parser.parse_args()
 
-def load_config(config_path: Path) -> Dict:
+def load_config(config_path: Path) -> dict:
     """Load the YAML configuration file."""
     with open(config_path, "r") as f:
         return yaml.safe_load(f)

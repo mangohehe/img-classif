@@ -57,6 +57,10 @@ available_node_types:
             diskSizeGb: 30
             diskType: zones/asia-southeast1-b/diskTypes/pd-standard
             sourceImage: projects/ubuntu-os-cloud/global/images/ubuntu-2204-jammy-arm64-v20241119
+      serviceAccounts:
+        - email: ray-autoscaler-sa-v1@llm-ft-442520.iam.gserviceaccount.com
+          scopes:
+            - https://www.googleapis.com/auth/cloud-platform
     resources: {"CPU": 1}
 # Specify the node type of the head node (as configured above).
 head_node_type: head_node
@@ -109,7 +113,7 @@ setup_commands:
   - source ~/.bashrc && conda activate ray_env && conda install --yes gcc_linux-aarch64 || echo "Failed to install conda gcc_linux-aarch64" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && pip install ray[default] cryptography >> /tmp/init.log 2>&1 || echo "Failed to install Ray and dependencies" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && pip install google-cloud-storage >> /tmp/init.log 2>&1 || echo "Failed to install google cloud storage"
-  - source ~/.bashrc && conda activate ray_env && conda install -c conda-forge libgl >> /tmp/init.log 2>&1 || echo "Failed to install google cloud storage"
+  - source ~/.bashrc && conda activate ray_env && conda install -y -c conda-forge libgl >> /tmp/init.log 2>&1 || echo "Failed to install google cloud storage"
   - source ~/.bashrc && conda activate ray_env && conda env export > /home/ray/environment.yml || echo "Failed to export Conda environment" >> /tmp/init.log
   - echo "Completed setup commands" >> /tmp/init.log
 

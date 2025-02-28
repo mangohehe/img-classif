@@ -40,3 +40,5 @@ urllib3==2.2.3
 wheel==0.44.0
 pydicom==3.0.1
 albumentations==2.0.3
+gcsfs
+pyarrow
