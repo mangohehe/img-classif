@@ -7,42 +7,31 @@ from albumentations.pytorch import ToTensorV2
 import gcsfs  # For GCS support
 
 class PneumothoraxRayDatasetOnGCP:
-    def __init__(self, data_folder, transform=None, max_samples=None, use_gcs=False):
+    def __init__(self, data_folder, transform=None, max_samples=None):
         """
         Args:
             data_folder (str): Path to the data folder (local or GCS).
             transform (callable, optional): Transformations to apply to the images.
             max_samples (int, optional): Maximum number of samples to load (for debugging).
-            use_gcs (bool): Whether to use Google Cloud Storage (GCS) for data access.
         """
         self.transform = transform
         self.to_tensor = ToTensorV2()
         self.max_samples = max_samples  # Optional: Limit the number of samples for debugging
-        self.use_gcs = use_gcs  # Whether to use GCS
 
         # Initialize GCS filesystem if using GCS
-        if self.use_gcs:
-            self.fs = gcsfs.GCSFileSystem()
-        else:
-            self.fs = None  # Use local filesystem
+        self.fs = gcsfs.GCSFileSystem()
 
         # Path definitions
-        self.test_image_path = os.path.join(data_folder, 'test')
+        self.test_image_path = data_folder
 
         # Load data into Ray Dataset
-        if self.use_gcs:
-            self.image_list = sorted(self.fs.ls(self.test_image_path))
-        else:
-            self.image_list = sorted(os.listdir(self.test_image_path))
+        self.image_list = sorted(self.fs.ls(self.test_image_path))
         self.num_data = len(self.image_list)
         self.dataset = self._load_dataset()
 
     def _load_dataset(self):
         """Load test images into a Ray Dataset."""
-        if self.use_gcs:
-            test_image_paths = [f"gs://{fname}" for fname in self.image_list]
-        else:
-            test_image_paths = [os.path.join(self.test_image_path, fname) for fname in self.image_list]
+        test_image_paths = [f"gs://{fname}" for fname in self.image_list]
         dataset = ray.data.from_items(test_image_paths)
         
         print("Dataset sample:", dataset.take(1))  # Inspect the dataset structure
@@ -68,11 +57,8 @@ class PneumothoraxRayDatasetOnGCP:
         print(f"Processing image: {image_path}")
         
         # Read image from GCS or local filesystem
-        if self.use_gcs:
-            with self.fs.open(image_path, 'rb') as f:
-                image = cv2.imdecode(np.frombuffer(f.read(), np.uint8), cv2.IMREAD_COLOR)
-        else:
-            image = cv2.imread(image_path, cv2.IMREAD_COLOR)
+        with self.fs.open(image_path, 'rb') as f:
+            image = cv2.imdecode(np.frombuffer(f.read(), np.uint8), cv2.IMREAD_COLOR)
         
         if image is None:
             raise ValueError(f"Failed to load image at path: {image_path}")

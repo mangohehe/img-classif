@@ -111,7 +111,7 @@ setup_commands:
   - echo "Activating ray_env and installing dependencies..." >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && conda install -y pip || echo "Failed to install pip in ray_env" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && conda install --yes gcc_linux-aarch64 || echo "Failed to install conda gcc_linux-aarch64" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && pip install ray[default] cryptography >> /tmp/init.log 2>&1 || echo "Failed to install Ray and dependencies" >> /tmp/init.log
+  - source ~/.bashrc && conda activate ray_env && pip install ray[default] ray[serve] cryptography >> /tmp/init.log 2>&1 || echo "Failed to install Ray and dependencies" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && pip install google-cloud-storage >> /tmp/init.log 2>&1 || echo "Failed to install google cloud storage"
   - source ~/.bashrc && conda activate ray_env && conda install -y -c conda-forge libgl >> /tmp/init.log 2>&1 || echo "Failed to install google cloud storage"
   - source ~/.bashrc && conda activate ray_env && conda env export > /home/ray/environment.yml || echo "Failed to export Conda environment" >> /tmp/init.log
@@ -124,6 +124,7 @@ head_setup_commands:
   - echo "Re-creating environment on head node..." >> /tmp/init.log
   - conda env create -f /home/ray/environment.yml >> /tmp/init.log 2>&1 || echo "Failed to create Conda environment from environment.yml" >> /tmp/init.log
   - echo "Installing additional head dependencies..." >> /tmp/init.log
+  - source ~/.bashrc && conda activate ray_env && pip install -r /home/ray/requirements.txt >> /tmp/init.log 2>&1 || echo "Failed to install dependencies from requirements.txt" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && pip install google-api-python-client==1.7.8 >> /tmp/init.log 2>&1 || echo "Failed to install head-specific dependencies" >> /tmp/init.log
   - echo "Completed head setup commands" >> /tmp/init.log
 

@@ -10,7 +10,7 @@ import gcsfs  # Add GCS support
 
 logger = logging.getLogger(__name__)
 
-@serve.deployment(num_replicas=2, ray_actor_options={"num_cpus": 4})  # Adjust num_cpus as needed
+@serve.deployment(num_replicas=1, ray_actor_options={"num_cpus": 2})  # Adjust num_cpus as needed
 class PneumothoraxModel:
     def __init__(self, model_config: Dict, model_path: str, device: str = "cpu"):
         self.device = torch.device(device)
