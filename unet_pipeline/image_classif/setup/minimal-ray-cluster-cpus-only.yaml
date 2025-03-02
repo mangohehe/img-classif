@@ -69,7 +69,7 @@ head_node_type: head_node
 # dictionary from REMOTE_PATH: LOCAL_PATH, e.g.
 file_mounts: {
 #    "/path1/on/remote/machine": "/path1/on/local/machine",
-    "/home/ray/requirements.txt": "./requirements.txt"
+#    "/home/ray/requirements.txt": "./requirements.txt"
 }
 
 # Files or directories to copy from the head node to the worker nodes. The format is a
@@ -100,6 +100,8 @@ setup_commands:
   - echo "Starting setup commands" >> /tmp/init.log
   - sudo apt-get update && sudo apt-get install -y wget bzip2 curl software-properties-common || echo "Failed to install dependencies" >> /tmp/init.log
   - echo "Installing Miniforge..." >> /tmp/init.log
+  - echo "Cloning repository..." >> /tmp/init.log
+  - git clone https://github.com/mangohehe/img-classif.git /home/ray/img-classif || echo "Failed to clone repository" >> /tmp/init.log
   - wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh -O miniforge.sh || echo "Failed to download Miniforge" >> /tmp/init.log
   - bash miniforge.sh -b -p $HOME/miniforge3 || echo "Failed to install Miniforge" >> /tmp/init.log
   - rm -f miniforge.sh
@@ -111,9 +113,11 @@ setup_commands:
   - echo "Activating ray_env and installing dependencies..." >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && conda install -y pip || echo "Failed to install pip in ray_env" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && conda install --yes gcc_linux-aarch64 || echo "Failed to install conda gcc_linux-aarch64" >> /tmp/init.log
+  - source $HOME/miniforge3/etc/profile.d/conda.sh && conda activate ray_env && pip install -r /home/ray/img-classif/requirements.txt >> /tmp/init.log 2>&1 || echo "Failed to install dependencies" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && pip install ray[default] ray[serve] cryptography >> /tmp/init.log 2>&1 || echo "Failed to install Ray and dependencies" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && pip install google-cloud-storage >> /tmp/init.log 2>&1 || echo "Failed to install google cloud storage"
   - source ~/.bashrc && conda activate ray_env && conda install -y -c conda-forge libgl >> /tmp/init.log 2>&1 || echo "Failed to install google cloud storage"
+  - source ~/.bashrc && conda activate ray_env && cd /home/ray/img-classif && pip install -e . >> /tmp/init.log 2>&1 || echo "Failed to install image_classif package" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && conda env export > /home/ray/environment.yml || echo "Failed to export Conda environment" >> /tmp/init.log
   - echo "Completed setup commands" >> /tmp/init.log
 
@@ -124,7 +128,7 @@ head_setup_commands:
   - echo "Re-creating environment on head node..." >> /tmp/init.log
   - conda env create -f /home/ray/environment.yml >> /tmp/init.log 2>&1 || echo "Failed to create Conda environment from environment.yml" >> /tmp/init.log
   - echo "Installing additional head dependencies..." >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && pip install -r /home/ray/requirements.txt >> /tmp/init.log 2>&1 || echo "Failed to install dependencies from requirements.txt" >> /tmp/init.log
+  - source ~/.bashrc && conda activate ray_env && pip install -r /home/ray/img-classif/requirements.txt >> /tmp/init.log 2>&1 || echo "Failed to install dependencies from requirements.txt" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && pip install google-api-python-client==1.7.8 >> /tmp/init.log 2>&1 || echo "Failed to install head-specific dependencies" >> /tmp/init.log
   - echo "Completed head setup commands" >> /tmp/init.log
 
@@ -135,22 +139,22 @@ worker_setup_commands:
   - echo "Re-creating environment on worker node..." >> /tmp/init.log
   - conda env create -f /home/ray/environment.yml >> /tmp/init.log 2>&1 || echo "Failed to create Conda environment from environment.yml" >> /tmp/init.log
   - echo "Installing additional worker dependencies..." >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && pip install -r /home/ray/requirements.txt >> /tmp/init.log 2>&1 || echo "Failed to install dependencies from requirements.txt" >> /tmp/init.log
+  - source ~/.bashrc && conda activate ray_env && pip install -r /home/ray/img-classif/requirements.txt >> /tmp/init.log 2>&1 || echo "Failed to install dependencies from requirements.txt" >> /tmp/init.log
   - echo "Completed worker setup commands" >> /tmp/init.log
 
 # Command to start Ray on the head node.
 head_start_ray_commands:
   - source ~/.bashrc && conda activate ray_env && ray stop
   - >-
-      source ~/.bashrc && conda activate ray_env &&
-      ulimit -n 65536;
-      ray start
-      --head
-      --port=6379
-      --dashboard-port=8265
-      --object-manager-port=8076
-      --autoscaling-config=~/ray_bootstrap_config.yaml
-      --dashboard-host=0.0.0.0
+    source ~/.bashrc && conda activate ray_env &&
+    ulimit -n 65536;
+    ray start
+    --head
+    --port=6379
+    --dashboard-port=8265
+    --object-manager-port=8076
+    --autoscaling-config=~/ray_bootstrap_config.yaml
+    --dashboard-host=0.0.0.0
 
 # Command to start Ray on worker nodes.
 worker_start_ray_commands:

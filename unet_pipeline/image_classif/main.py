@@ -11,9 +11,9 @@ from pathlib import Path
 import argparse
 import yaml
 import albumentations as albu
-from ServeDeployment import start_serve
-from InferenceClient import run_inference, save_results
-from PneumothoraxRayDatasetOnGCP import PneumothoraxRayDatasetOnGCP as PneumothoraxDataset
+from .ServeDeployment import start_serve
+from .InferenceClient import run_inference, save_results
+from .PneumothoraxRayDatasetOnGCP import PneumothoraxRayDatasetOnGCP as PneumothoraxDataset
 from utils.Helpers import init_logger
 
 # Initialize logger

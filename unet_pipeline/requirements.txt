@@ -1,6 +1,5 @@
 Bottleneck==1.4.2
 Brotli==1.0.9
-certifi==2024.12.14
 charset-normalizer==3.3.2
 filelock==3.13.1
 fsspec==2025.2.0
