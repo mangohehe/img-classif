@@ -4,8 +4,8 @@ setup(
     name="img_classif",
     version="0.1.0",
     description="Pneumothorax model reference service on a Ray-based cluster on GCP",
-    author="Your Name",
-    url="https://github.com/yourusername/img-classif",  # Update if applicable
+    author="Feng Gao",
+    url="https://github.com/mangohehe/img-classif",  # Update if applicable
     packages=find_packages(include=["src", "src.*", "models", "models.*"]),
     install_requires=[
         "ray[serve]",

@@ -21,3 +21,9 @@ input/dataset1024
 /unet_pipeline/image_clasif.egg-info
 /unet_pipeline/my_ray_project.egg-info
 /unet_pipeline/train/experiments/albunet_valid/checkpoints
+/pipelines/.configs
+/unet_pipeline/image_classif/img_classif.egg-info
+/unet_pipeline/image_classif/img_classif.egg-info
+/unet_pipeline/image_classif/img_classif.egg-info
+/pipelines/train/experiments/albunet_valid/checkpoints
+/unet_pipeline/image_classif/img_classif.egg-info
