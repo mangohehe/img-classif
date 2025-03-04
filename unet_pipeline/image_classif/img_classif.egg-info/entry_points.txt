@@ -1,0 +1,2 @@
+[console_scripts]
+pneumothorax-pipeline = src.main:main

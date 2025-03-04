@@ -14,7 +14,7 @@ provider:
 
 # The maximum number of workers nodes to launch in addition to the head
 # node.
-max_workers: 1
+max_workers: 2
 
 # The autoscaler will scale up the cluster faster with higher upscaling speed.
 # E.g., if the task requires adding more nodes then autoscaler will gradually
@@ -45,8 +45,8 @@ available_node_types:
     resources: {"CPU": 1}
 
   worker_node:
-    min_workers: 1  # At least one worker node will start
-    max_workers: 1  # Can scale up to three worker nodes based on workload
+    min_workers: 2  # At least one worker node will start
+    max_workers: 2  # Can scale up to three worker nodes based on workload
     node_config:
       machineType: t2a-standard-1
       disks:
@@ -117,7 +117,7 @@ setup_commands:
   - source ~/.bashrc && conda activate ray_env && pip install ray[default] ray[serve] cryptography >> /tmp/init.log 2>&1 || echo "Failed to install Ray and dependencies" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && pip install google-cloud-storage >> /tmp/init.log 2>&1 || echo "Failed to install google cloud storage"
   - source ~/.bashrc && conda activate ray_env && conda install -y -c conda-forge libgl >> /tmp/init.log 2>&1 || echo "Failed to install google cloud storage"
-  - source ~/.bashrc && conda activate ray_env && cd /home/ray/img-classif && pip install -e . >> /tmp/init.log 2>&1 || echo "Failed to install image_classif package" >> /tmp/init.log
+  - source ~/.bashrc && conda activate ray_env && cd /home/ray/img-classif/unet_pipeline && pip install -e . >> /tmp/init.log 2>&1 || echo "Failed to install image_classif package" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && conda env export > /home/ray/environment.yml || echo "Failed to export Conda environment" >> /tmp/init.log
   - echo "Completed setup commands" >> /tmp/init.log
 
