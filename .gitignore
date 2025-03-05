@@ -27,3 +27,4 @@ input/dataset1024
 /unet_pipeline/image_classif/img_classif.egg-info
 /pipelines/train/experiments/albunet_valid/checkpoints
 /unet_pipeline/image_classif/img_classif.egg-info
+/pipelines/pneumothorax/pipelines.egg-info

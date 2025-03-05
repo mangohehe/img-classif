@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="img_classif",
+    name="pipelines",
     version="0.1.0",
     description="Pneumothorax model reference service on a Ray-based cluster on GCP",
     author="Feng Gao",

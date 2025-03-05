@@ -10,7 +10,7 @@ import gcsfs
 
 logger = logging.getLogger(__name__)
 
-@serve.deployment(num_replicas=1, ray_actor_options={"num_cpus": 2})
+@serve.deployment(num_replicas=3, ray_actor_options={"num_cpus": 1})
 class PneumothoraxModel:
     def __init__(self, model_config: Dict[str, Any], model_path: str, device: str = "cpu"):
         """

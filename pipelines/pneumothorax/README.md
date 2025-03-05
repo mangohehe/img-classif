@@ -61,3 +61,27 @@ For the complete list of dependencies, see the [requirements.txt](requirements.t
 
 - **Transformer Configuration:** Create a transformer configuration file in JSON (e.g., ./configs/transformer_1024.json) to define image transformation settings using Albumentations.
 
+## Accessing Grafana and the Ray Dashboard via SSH Tunnels
+
+By default, ports 3000 (Grafana) and 8265 (Ray Dashboard) are only accessible within the cluster network. To securely connect from your local machine without opening these ports publicly, you can use SSH tunneling with the `gcloud` command.
+
+### Steps
+
+## Spin Up the Ray Cluster on GCP and Access Grafana & Ray Dashboard via SSH Tunnels
+
+1. **Start the Ray Cluster**  
+   From your local machine, run:
+   ```bash
+   ray up pneumothorax/ray_config/minimal-ray-cluster-cpus-only.yaml -y
+
+2. **Create the SSH Tunnel:**
+   Open a terminal on local machine and run:
+   ```bash
+   gcloud compute ssh \
+       ray-arm-minimal-head-8e93b970-compute \
+       --zone asia-southeast1-b \
+       -- -L 3000:localhost:3000 -L 8265:localhost:8265
+
+3. **Access Grafana & the Ray Dashboard**
+   - Grafana: Navigate to http://localhost:3000 in your local browser.
+   - Ray Dashboard: Navigate to http://localhost:8265 in your local browser.
