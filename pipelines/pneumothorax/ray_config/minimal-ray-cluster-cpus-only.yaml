@@ -161,9 +161,6 @@ head_start_ray_commands:
     RAY_PROMETHEUS_HOST="http://localhost:9090"
     RAY_PROMETHEUS_NAME="Prometheus"
 
-    mkdir -p /tmp/ray/session_latest/metrics/grafana/provisioning/plugins
-    mkdir -p /tmp/ray/session_latest/metrics/grafana/provisioning/alerting
-
     source ~/.bashrc && conda activate ray_env &&
     ulimit -n 65536;
     ray start
@@ -177,6 +174,8 @@ head_start_ray_commands:
   - source ~/.bashrc && conda activate ray_env &&
     ray metrics launch-prometheus
   - source ~/.bashrc && conda activate ray_env && 
+    mkdir -p /tmp/ray/session_latest/metrics/grafana/provisioning/plugins &&
+    mkdir -p /tmp/ray/session_latest/metrics/grafana/provisioning/alerting &&
     grafana-server --homepath /usr/share/grafana --config /tmp/ray/session_latest/metrics/grafana/grafana.ini
 
 # Command to start Ray on worker nodes.
