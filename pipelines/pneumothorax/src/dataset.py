@@ -10,6 +10,16 @@ from typing import Callable, Optional, Union, Dict
 
 logger = logging.getLogger(__name__)
 
+#   Overall, this class creates a pipeline to:
+	#	Load image paths from a GCS bucket.
+	#	Create a Ray Dataset from these paths.
+	#	Preprocess images (read, decode, normalize, and reformat).
+	#	Apply Albumentations transformations.
+        # Resize
+        # Bounding Box
+        # Augmentation
+	#	Allow iteration over a preprocessed and optionally limited dataset.
+
 class PneumothoraxRayDatasetOnGCP:
     def __init__(
         self, 

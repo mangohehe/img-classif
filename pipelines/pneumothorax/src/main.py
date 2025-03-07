@@ -5,6 +5,7 @@ import yaml
 import logging
 import albumentations as albu
 from pathlib import Path
+import ray 
 
 # Relative imports from the current package
 from .serve_deployment import start_serve
@@ -77,6 +78,9 @@ def main() -> None:
     config_path = Path(args.model).resolve()
     config = load_yaml_config(config_path)
     logger.info(f"Loaded configuration: {config}")
+
+    # **Initialize Ray and connect to the existing cluster**
+    ray.init(address="auto")
 
     # Load transformation if provided
     if args.transformer:
