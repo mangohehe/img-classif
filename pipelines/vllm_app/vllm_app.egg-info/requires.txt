@@ -1,0 +1,6 @@
+ray
+fastapi
+uvicorn
+openai
+vllm
+click

@@ -1,0 +1,2 @@
+[console_scripts]
+vllm-app = src.cli:cli

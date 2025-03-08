@@ -1,0 +1,8 @@
+ray
+ray[serve]
+fastapi
+uvicorn
+requests
+msgspec
+vllm
+transformers

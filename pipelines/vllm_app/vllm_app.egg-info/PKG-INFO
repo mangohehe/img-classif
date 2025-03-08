@@ -1,0 +1,10 @@
+Metadata-Version: 2.2
+Name: vllm_app
+Version: 0.1.0
+Requires-Dist: ray
+Requires-Dist: fastapi
+Requires-Dist: uvicorn
+Requires-Dist: openai
+Requires-Dist: vllm
+Requires-Dist: click
+Dynamic: requires-dist
