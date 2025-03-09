@@ -97,9 +97,9 @@ initialization_commands: []
 setup_commands:
   - echo "Starting setup commands" >> /tmp/init.log
   - sudo apt-get update && sudo apt-get install -y wget bzip2 curl software-properties-common || echo "Failed to install dependencies" >> /tmp/init.log
+  - sudo apt-get install -y gcc-12 g++-12 libnuma-dev || echo "Failed to install gcc-12, g++-12, libnuma-dev" >> /tmp/init.log
+  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 10 --slave /usr/bin/g++ g++ /usr/bin/gcc-12 || echo "Failed to update alternatives for gcc/g++" >> /tmp/init.log
   - echo "Installing Miniforge..." >> /tmp/init.log
-  - echo "Cloning repository..." >> /tmp/init.log
-  
   - wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh -O miniforge.sh || echo "Failed to download Miniforge" >> /tmp/init.log
   - bash miniforge.sh -b -p $HOME/miniforge3 || echo "Failed to install Miniforge" >> /tmp/init.log
   - rm -f miniforge.sh
@@ -110,13 +110,14 @@ setup_commands:
   - conda create -n ray_env python=3.10 -y || echo "Failed to create Conda environment" >> /tmp/init.log
   - echo "Activating ray_env and installing dependencies..." >> /tmp/init.log
   - git clone https://github.com/mangohehe/img-classif.git /home/ray/img-classif || echo "Failed to clone repository" >> /tmp/init.log
-  - source $HOME/miniforge3/etc/profile.d/conda.sh && conda activate ray_env && pip install -r /home/ray/img-classif/pipelines/vllm_app/requirements.txt >> /tmp/init.log 2>&1 || echo "Failed to install dependencies" >> /tmp/init.log
+  - source $HOME/miniforge3/etc/profile.d/conda.sh && conda activate ray_env && pip install -r /home/ray/img-classif/pipelines/vllm_app/requirements.txt >> /tmp/init.log 2>&1 || echo "Failed to install repository dependencies" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && conda install -y pip || echo "Failed to install pip in ray_env" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && conda install --yes gcc_linux-aarch64 || echo "Failed to install conda gcc_linux-aarch64" >> /tmp/init.log
+  - source ~/.bashrc && conda activate ray_env && pip install "cmake>=3.26" wheel packaging ninja "setuptools-scm>=8" numpy >> /tmp/init.log 2>&1 || echo "Failed to install build tool dependencies" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && pip install ray[default] ray[serve] cryptography >> /tmp/init.log 2>&1 || echo "Failed to install Ray and dependencies" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && pip install google-cloud-storage >> /tmp/init.log 2>&1 || echo "Failed to install google cloud storage"
-  - source ~/.bashrc && conda activate ray_env && conda install -y -c conda-forge libgl >> /tmp/init.log 2>&1 || echo "Failed to install google cloud storage"
-  - source ~/.bashrc && conda activate ray_env && cd /home/ray/img-classif/pipelines/vllm_app && pip install -e . >> /tmp/init.log 2>&1 || echo "Failed to install pneumothorax package" >> /tmp/init.log
+  - source ~/.bashrc && conda activate ray_env && pip install google-cloud-storage >> /tmp/init.log 2>&1 || echo "Failed to install google cloud storage" >> /tmp/init.log
+  - source ~/.bashrc && conda activate ray_env && conda install -y -c conda-forge libgl >> /tmp/init.log 2>&1 || echo "Failed to install libgl" >> /tmp/init.log
+  - source ~/.bashrc && conda activate ray_env && cd /home/ray/img-classif/pipelines/vllm_app && pip install -e . >> /tmp/init.log 2>&1 || echo "Failed to install the vllm_app package" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && conda env export > /home/ray/environment.yml || echo "Failed to export Conda environment" >> /tmp/init.log
   - echo "Completed setup commands" >> /tmp/init.log
 
