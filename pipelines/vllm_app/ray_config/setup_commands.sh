@@ -1,17 +1,9 @@
 #!/bin/bash
 
 # Log the start of the script
-echo "Starting setup_all.sh" >> /tmp/init.log
+echo "Starting setup_commands.sh" >> /tmp/init.log
 
-# Install system dependencies
-echo "Installing system dependencies..." >> /tmp/init.log
-sudo apt-get update && sudo apt-get install -y wget bzip2 curl software-properties-common || { echo "Failed to install dependencies" >> /tmp/init.log; exit 1; }
-
-# Clone the repository
-echo "Cloning repository..." >> /tmp/init.log
-git clone https://github.com/mangohehe/img-classif.git /home/ray/img-classif || { echo "Failed to clone repository" >> /tmp/init.log; exit 1; }
-
-# Set Conda installation directory
+tallation directory
 CONDA_DIR="/home/ray/miniforge3"
 
 # Source Conda initialization script

@@ -96,7 +96,9 @@ initialization_commands: []
 # List of shell commands to run to set up nodes.
 setup_commands:
   - echo "Starting setup commands" >> /tmp/init.log
-  - bash /home/ray/img-classif/pipelines/vllm_app/ray_config/setup_all.sh
+  - sudo apt-get update && sudo apt-get install -y wget bzip2 curl software-properties-common || echo "Failed to install dependencies" >> /tmp/init.log
+  - git clone https://github.com/mangohehe/img-classif.git /home/ray/img-classif || echo "Failed to clone repository" >> /tmp/init.log
+  - bash /home/ray/img-classif/pipelines/vllm_app/ray_config/setup_commands.sh
   - echo "Completed setup commands" >> /tmp/init.log
 
 # Custom commands that will be run on the head node after common setup.
