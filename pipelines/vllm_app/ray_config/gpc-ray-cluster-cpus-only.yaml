@@ -96,12 +96,7 @@ initialization_commands: []
 # List of shell commands to run to set up nodes.
 setup_commands:
   - echo "Starting setup commands" >> /tmp/init.log
-  - sudo apt-get update && sudo apt-get install -y wget bzip2 curl software-properties-common || echo "Failed to install dependencies" >> /tmp/init.log
-  - git clone https://github.com/mangohehe/img-classif.git /home/ray/img-classif || echo "Failed to clone repository" >> /tmp/init.log
-  - /home/ray/img-classif/pipelines/vllm_app/ray_config/setup_ray_env.sh >> /tmp/init.log 2>&1 || echo "Failed to setup Ray environment" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && /home/ray/img-classif/pipelines/vllm_app/ray_config/setup_vllm.sh >> /tmp/init.log 2>&1 || echo "Failed to setup VLLM" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && cd /home/ray/img-classif/pipelines/vllm_app && pip install -e . >> /tmp/init.log 2>&1 || echo "Failed to install the vllm_app package" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && conda env export > /home/ray/environment.yml || echo "Failed to export Conda environment" >> /tmp/init.log
+  - bash /home/ray/img-classif/pipelines/vllm_app/ray_config/setup_all.sh
   - echo "Completed setup commands" >> /tmp/init.log
 
 # Custom commands that will be run on the head node after common setup.
