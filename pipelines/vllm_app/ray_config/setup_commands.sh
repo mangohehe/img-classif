@@ -3,7 +3,6 @@
 # Log the start of the script
 echo "Starting setup_commands.sh" >> /tmp/init.log
 
-tallation directory
 CONDA_DIR="/home/ray/miniforge3"
 
 # Source Conda initialization script
