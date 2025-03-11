@@ -25,7 +25,7 @@ def extract_final_text(request_outputs):
         return ""
 
 async def test_generation():
-    engine_args = AsyncEngineArgs(model="gpt2")
+    engine_args = AsyncEngineArgs(model="gpt2", device="cpu")
     engine = AsyncLLMEngine.from_engine_args(engine_args)
     prompt = "You are a helpful assistant.\nUser: What are some highly rated restaurants in San Francisco?\nAssistant:"
     sampling_params = SamplingParams(max_tokens=100)

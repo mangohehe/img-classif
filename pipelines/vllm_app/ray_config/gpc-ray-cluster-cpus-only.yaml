@@ -2,19 +2,19 @@ auth:
   ssh_user: ray 
   ssh_private_key: ~/.ssh/ray-autoscaler
 
-cluster_name: arm-minimal
+cluster_name: ray-cluster
 
 file_mounts: {}
 
 provider:
   type: gcp
-  region: asia-southeast1
-  availability_zone: asia-southeast1-b
+  region: us-central1
+  availability_zone: us-central1-f
   project_id: llm-ft-442520
 
 # The maximum number of workers nodes to launch in addition to the head
 # node.
-max_workers: 2
+max_workers: 3
 
 # The autoscaler will scale up the cluster faster with higher upscaling speed.
 # E.g., if the task requires adding more nodes then autoscaler will gradually
@@ -33,35 +33,35 @@ idle_timeout_minutes: 30
 available_node_types:
   head_node:
     node_config:
-      machineType: t2a-standard-1
+      machineType: t2a-standard-8 
       disks:
         - boot: true
           autoDelete: true
           type: PERSISTENT
           initializeParams:
-            diskSizeGb: 20
+            diskSizeGb: 50
             diskType: zones/asia-southeast1-b/diskTypes/pd-standard
             sourceImage: projects/ubuntu-os-cloud/global/images/ubuntu-2204-jammy-arm64-v20241119
-    resources: {"CPU": 1}
+    resources: {"CPU": 2}
 
   worker_node:
-    min_workers: 2  # At least one worker node will start
-    max_workers: 2  # Can scale up to three worker nodes based on workload
+    min_workers: 3  # At least one worker node will start
+    max_workers: 3  # Can scale up to three worker nodes based on workload
     node_config:
-      machineType: t2a-standard-1
+      machineType: t2a-standard-8
       disks:
         - boot: true
           autoDelete: true
           type: PERSISTENT
           initializeParams:
-            diskSizeGb: 20
+            diskSizeGb: 50
             diskType: zones/asia-southeast1-b/diskTypes/pd-standard
             sourceImage: projects/ubuntu-os-cloud/global/images/ubuntu-2204-jammy-arm64-v20241119
       serviceAccounts:
         - email: ray-autoscaler-sa-v1@llm-ft-442520.iam.gserviceaccount.com
           scopes:
             - https://www.googleapis.com/auth/cloud-platform
-    resources: {"CPU": 4}
+    resources: {"CPU": 2}
 # Specify the node type of the head node (as configured above).
 head_node_type: head_node
 
@@ -97,26 +97,9 @@ initialization_commands: []
 setup_commands:
   - echo "Starting setup commands" >> /tmp/init.log
   - sudo apt-get update && sudo apt-get install -y wget bzip2 curl software-properties-common || echo "Failed to install dependencies" >> /tmp/init.log
-  - sudo apt-get install -y gcc-12 g++-12 libnuma-dev || echo "Failed to install gcc-12, g++-12, libnuma-dev" >> /tmp/init.log
-  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 10 --slave /usr/bin/g++ g++ /usr/bin/gcc-12 || echo "Failed to update alternatives for gcc/g++" >> /tmp/init.log
-  - echo "Installing Miniforge..." >> /tmp/init.log
-  - wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh -O miniforge.sh || echo "Failed to download Miniforge" >> /tmp/init.log
-  - bash miniforge.sh -b -p $HOME/miniforge3 || echo "Failed to install Miniforge" >> /tmp/init.log
-  - rm -f miniforge.sh
-  - $HOME/miniforge3/bin/conda init bash || echo "Failed to initialize Conda" >> /tmp/init.log
-  - source ~/.bashrc
-  - conda config --set auto_activate_base false || echo "Failed to configure Conda" >> /tmp/init.log
-  - echo "Creating Conda environment ray_env..." >> /tmp/init.log
-  - conda create -n ray_env python=3.10 -y || echo "Failed to create Conda environment" >> /tmp/init.log
-  - echo "Activating ray_env and installing dependencies..." >> /tmp/init.log
   - git clone https://github.com/mangohehe/img-classif.git /home/ray/img-classif || echo "Failed to clone repository" >> /tmp/init.log
-  - source $HOME/miniforge3/etc/profile.d/conda.sh && conda activate ray_env && pip install -r /home/ray/img-classif/pipelines/vllm_app/requirements.txt >> /tmp/init.log 2>&1 || echo "Failed to install repository dependencies" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && conda install -y pip || echo "Failed to install pip in ray_env" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && conda install --yes gcc_linux-aarch64 || echo "Failed to install conda gcc_linux-aarch64" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && pip install "cmake>=3.26" wheel packaging ninja "setuptools-scm>=8" numpy >> /tmp/init.log 2>&1 || echo "Failed to install build tool dependencies" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && pip install ray[default] ray[serve] cryptography >> /tmp/init.log 2>&1 || echo "Failed to install Ray and dependencies" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && pip install google-cloud-storage >> /tmp/init.log 2>&1 || echo "Failed to install google cloud storage" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && conda install -y -c conda-forge libgl >> /tmp/init.log 2>&1 || echo "Failed to install libgl" >> /tmp/init.log
+  - /home/ray/img-classif/pipelines/vllm_app/ray_config/setup_ray_env.sh >> /tmp/init.log 2>&1 || echo "Failed to setup Ray environment" >> /tmp/init.log
+  - source ~/.bashrc && conda activate ray_env && /home/ray/img-classif/pipelines/vllm_app/ray_config/setup_vllm.sh >> /tmp/init.log 2>&1 || echo "Failed to setup VLLM" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && cd /home/ray/img-classif/pipelines/vllm_app && pip install -e . >> /tmp/init.log 2>&1 || echo "Failed to install the vllm_app package" >> /tmp/init.log
   - source ~/.bashrc && conda activate ray_env && conda env export > /home/ray/environment.yml || echo "Failed to export Conda environment" >> /tmp/init.log
   - echo "Completed setup commands" >> /tmp/init.log

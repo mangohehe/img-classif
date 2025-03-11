@@ -14,7 +14,8 @@ def main():
         "model": MODEL_NAME,
         "tensor_parallel_size": TENSOR_PARALLEL_SIZE,
         "response_role": RESPONSE_ROLE,
-        "accelerator": "CPU",
+        "device": "cpu",
+        "accelerator": "cpu",
     }
 
     # Build and deploy the Serve application
