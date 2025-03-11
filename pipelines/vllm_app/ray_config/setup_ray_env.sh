@@ -12,6 +12,7 @@ bash miniforge.sh -b -p "$HOME/miniforge3" || echo "Failed to install Miniforge"
 ~/miniforge3/bin/conda init bash || echo "Failed to initialize Conda" >> /tmp/init.log
 
 # Reload bash configuration to ensure conda is available
+source ~/miniforge3/etc/profile.d/conda.sh
 source ~/.bashrc
 
 # Configure Conda not to auto-activate the base environment

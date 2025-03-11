@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+# Source the Conda initialization script and activate ray_env
+source /home/ray/miniforge3/etc/profile.d/conda.sh || { echo "Failed to source conda.sh" >> /tmp/init.log; exit 1; }
+conda activate ray_env || { echo "Failed to activate ray_env" >> /tmp/init.log; exit 1; }
+
 echo "Step 1: Updating package lists..."
 sudo apt-get update -y
 
