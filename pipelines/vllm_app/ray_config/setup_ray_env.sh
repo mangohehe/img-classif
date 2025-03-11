@@ -7,10 +7,9 @@ echo "Installing Miniforge..." >> /tmp/init.log
 wget https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-aarch64.sh -O miniforge.sh || echo "Failed to download Miniforge" >> /tmp/init.log
 sha256sum miniforge.sh
 bash miniforge.sh -b -p "$HOME/miniforge3" || echo "Failed to install Miniforge" >> /tmp/init.log
-rm -f miniforge.sh
 
 # Initialize Conda for bash
-"$HOME/miniforge3/bin/conda" init bash || echo "Failed to initialize Conda" >> /tmp/init.log
+~/miniforge3/bin/conda init bash || echo "Failed to initialize Conda" >> /tmp/init.log
 
 # Reload bash configuration to ensure conda is available
 source ~/.bashrc
