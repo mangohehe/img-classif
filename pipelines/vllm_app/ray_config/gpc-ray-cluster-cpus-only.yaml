@@ -96,28 +96,15 @@ initialization_commands: []
 # List of shell commands to run to set up nodes.
 setup_commands:
   - echo "Starting setup commands" >> /tmp/init.log
-  - sudo apt-get update && sudo apt-get install -y wget bzip2 curl software-properties-common || echo "Failed to install dependencies" >> /tmp/init.log && git clone https://github.com/mangohehe/img-classif.git /home/ray/img-classif || echo "Failed to clone repository" >> /tmp/init.log && bash /home/ray/img-classif/pipelines/vllm_app/ray_config/setup_commands.sh
+  - sudo apt-get update && sudo apt-get install -y wget bzip2 curl software-properties-common || echo "Failed to install dependencies" >> /tmp/init.log && 
+  git clone https://github.com/mangohehe/img-classif.git /home/ray/img-classif || echo "Failed to clone repository" >> /tmp/init.log && 
+  bash /home/ray/img-classif/pipelines/vllm_app/ray_config/setup_commands.sh
   - echo "Completed setup commands" >> /tmp/init.log
 
 # Custom commands that will be run on the head node after common setup.
 head_setup_commands:
   - echo "Starting head setup commands" >> /tmp/init.log
-  - source ~/.bashrc
-  - echo "Re-creating environment on head node..." >> /tmp/init.log
-  - conda env create -f /home/ray/environment.yml >> /tmp/init.log 2>&1 || echo "Failed to create Conda environment from environment.yml" >> /tmp/init.log
-  - echo "Installing additional head dependencies..." >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && pip install -r /home/ray/img-classif/pipelines/vllm_app/requirements.txt >> /tmp/init.log 2>&1 || echo "Failed to install dependencies from requirements.txt" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && pip install google-api-python-client==1.7.8 >> /tmp/init.log 2>&1 || echo "Failed to install head-specific dependencies" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && sudo apt-get install -y apt-transport-https software-properties-common wget || echo "Failed to install prerequisites" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && sudo mkdir -p /etc/apt/keyrings/ || echo "Failed to create /etc/apt/keyrings/" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && wget -q -O - https://apt.grafana.com/gpg.key | gpg --dearmor | sudo tee /etc/apt/keyrings/grafana.gpg > /dev/null || echo "Failed to download or convert Grafana GPG key" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list || echo "Failed to add Grafana stable repo" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com beta main" | sudo tee -a /etc/apt/sources.list.d/grafana.list || echo "Failed to add Grafana beta repo" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && sudo apt-get update || echo "Failed to update APT repositories" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && sudo apt-get install -y grafana || echo "Failed to install Grafana OSS" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && sudo chown -R ray:ray /usr/share/grafana || echo "Failed to update ownership of /usr/share/grafana" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && sudo chmod -R 755 /usr/share/grafana || echo "Failed to set permissions for /usr/share/grafana" >> /tmp/init.log
-  - source ~/.bashrc && conda activate ray_env && echo "Grafana installation and service start complete" >> /tmp/init.log 
+  - bash /home/ray/img-classif/pipelines/vllm_app/ray_config/head_setup.sh
   - echo "Completed head setup commands" >> /tmp/init.log
 
 # Custom commands that will be run on worker nodes after common setup.
@@ -132,31 +119,9 @@ worker_setup_commands:
 
 # Command to start Ray on the head node.
 head_start_ray_commands:
-  - source ~/.bashrc && conda activate ray_env && ray stop
-  - >-
-    source ~/.bashrc && conda activate ray_en
-    # Set environment variables for Ray Dashboard + Grafana integration:
-    RAY_GRAFANA_HOST="http://localhost:3000"
-    RAY_GRAFANA_IFRAME_HOST="http://localhost:3000"
-    RAY_PROMETHEUS_HOST="http://localhost:9090"
-    RAY_PROMETHEUS_NAME="Prometheus"
-
-    source ~/.bashrc && conda activate ray_env &&
-    ulimit -n 65536;
-    ray start
-    --head
-    --port=6379
-    --dashboard-port=8265
-    --object-manager-port=8076
-    --autoscaling-config=~/ray_bootstrap_config.yaml
-    --dashboard-host=0.0.0.0
-    --metrics-export-port=8080
-  - source ~/.bashrc && conda activate ray_env &&
-    ray metrics launch-prometheus
-  - source ~/.bashrc && conda activate ray_env && 
-    mkdir -p /tmp/ray/session_latest/metrics/grafana/provisioning/plugins &&
-    mkdir -p /tmp/ray/session_latest/metrics/grafana/provisioning/alerting &&
-    grafana-server --homepath /usr/share/grafana --config /tmp/ray/session_latest/metrics/grafana/grafana.ini
+  - echo "Starting Ray on head node" >> /tmp/init.log
+  - bash /home/ray/img-classif/pipelines/vllm_app/ray_config/head_start_ray.sh
+  - echo "Completed Ray start on head node" >> /tmp/init.log
 
 # Command to start Ray on worker nodes.
 worker_start_ray_commands:
