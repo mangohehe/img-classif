@@ -33,7 +33,7 @@ idle_timeout_minutes: 30
 available_node_types:
   head_node:
     node_config:
-      machineType: t2a-standard-8 
+      machineType: t2a-standard-2 
       disks:
         - boot: true
           autoDelete: true
@@ -48,7 +48,7 @@ available_node_types:
     min_workers: 3  # At least one worker node will start
     max_workers: 3  # Can scale up to three worker nodes based on workload
     node_config:
-      machineType: t2a-standard-8
+      machineType: t2a-standard-2
       disks:
         - boot: true
           autoDelete: true
@@ -96,9 +96,7 @@ initialization_commands: []
 # List of shell commands to run to set up nodes.
 setup_commands:
   - echo "Starting setup commands" >> /tmp/init.log
-  - sudo apt-get update && sudo apt-get install -y wget bzip2 curl software-properties-common || echo "Failed to install dependencies" >> /tmp/init.log
-  - git clone https://github.com/mangohehe/img-classif.git /home/ray/img-classif || echo "Failed to clone repository" >> /tmp/init.log
-  - bash /home/ray/img-classif/pipelines/vllm_app/ray_config/setup_commands.sh
+  - sudo apt-get update && sudo apt-get install -y wget bzip2 curl software-properties-common || echo "Failed to install dependencies" >> /tmp/init.log && git clone https://github.com/mangohehe/img-classif.git /home/ray/img-classif || echo "Failed to clone repository" >> /tmp/init.log && bash /home/ray/img-classif/pipelines/vllm_app/ray_config/setup_commands.sh
   - echo "Completed setup commands" >> /tmp/init.log
 
 # Custom commands that will be run on the head node after common setup.
@@ -136,6 +134,7 @@ worker_setup_commands:
 head_start_ray_commands:
   - source ~/.bashrc && conda activate ray_env && ray stop
   - >-
+    source ~/.bashrc && conda activate ray_en
     # Set environment variables for Ray Dashboard + Grafana integration:
     RAY_GRAFANA_HOST="http://localhost:3000"
     RAY_GRAFANA_IFRAME_HOST="http://localhost:3000"
