@@ -14,7 +14,7 @@ provider:
 
 # The maximum number of workers nodes to launch in addition to the head
 # node.
-max_workers: 3
+max_workers: 2
 
 # The autoscaler will scale up the cluster faster with higher upscaling speed.
 # E.g., if the task requires adding more nodes then autoscaler will gradually
@@ -33,7 +33,7 @@ idle_timeout_minutes: 30
 available_node_types:
   head_node:
     node_config:
-      machineType: t2a-standard-2 
+      machineType: t2a-standard-4 
       disks:
         - boot: true
           autoDelete: true
@@ -42,11 +42,11 @@ available_node_types:
             diskSizeGb: 50
             diskType: zones/asia-southeast1-b/diskTypes/pd-standard
             sourceImage: projects/ubuntu-os-cloud/global/images/ubuntu-2204-jammy-arm64-v20241119
-    resources: {"CPU": 2}
+    resources: {"CPU": 4}
 
   worker_node:
-    min_workers: 3  # At least one worker node will start
-    max_workers: 3  # Can scale up to three worker nodes based on workload
+    min_workers: 2  # At least one worker node will start
+    max_workers: 2  # Can scale up to three worker nodes based on workload
     node_config:
       machineType: t2a-standard-2
       disks:
@@ -95,11 +95,12 @@ initialization_commands: []
 
 # List of shell commands to run to set up nodes.
 setup_commands:
-  - echo "Starting setup commands" >> /tmp/init.log
-  - sudo apt-get update && sudo apt-get install -y wget bzip2 curl software-properties-common || echo "Failed to install dependencies" >> /tmp/init.log && 
-  git clone https://github.com/mangohehe/img-classif.git /home/ray/img-classif || echo "Failed to clone repository" >> /tmp/init.log && 
-  bash /home/ray/img-classif/pipelines/vllm_app/ray_config/setup_commands.sh
-  - echo "Completed setup commands" >> /tmp/init.log
+  - |
+    echo "Starting setup commands" >> /tmp/init.log
+    sudo apt-get update && sudo apt-get install -y wget bzip2 curl software-properties-common || { echo "Failed to install dependencies" >> /tmp/init.log; exit 1; }
+    git clone https://github.com/mangohehe/img-classif.git /home/ray/img-classif || { echo "Failed to clone repository" >> /tmp/init.log; exit 1; }
+    bash /home/ray/img-classif/pipelines/vllm_app/ray_config/setup_commands.sh
+    echo "Completed setup commands" >> /tmp/init.log
 
 # Custom commands that will be run on the head node after common setup.
 head_setup_commands:
