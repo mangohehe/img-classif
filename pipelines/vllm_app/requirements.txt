@@ -1,8 +1,9 @@
-ray
-ray[serve]
 fastapi
 uvicorn
 requests
 msgspec
-vllm
 transformers
+ray[default] 
+ray[serve] 
+cryptography 
+google-cloud-storage 
