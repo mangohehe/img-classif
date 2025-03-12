@@ -13,6 +13,8 @@ bash /home/ray/img-classif/pipelines/vllm_app/ray_config/setup_vllm.sh >> /tmp/i
 
 # Install the vllm_app package
 echo "Installing vllm_app package..." >> /tmp/init.log
+source /home/ray/miniforge3/etc/profile.d/conda.sh || { echo "Failed to source conda.sh" >> /tmp/init.log; exit 1; }
+conda activate ray_env || { echo "Failed to activate ray_env" >> /tmp/init.log; exit 1; }
 cd /home/ray/img-classif/pipelines/vllm_app && pip install -e . >> /tmp/init.log 2>&1 || { echo "Failed to install the vllm_app package" >> /tmp/init.log; exit 1; }
 
 # Export the Conda environment
