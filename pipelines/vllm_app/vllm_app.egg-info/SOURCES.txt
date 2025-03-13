@@ -1,5 +1,6 @@
 pyproject.toml
 setup.py
+tests/test_model_supprt.py
 tests/test_vllm.py
 vllm_app.egg-info/PKG-INFO
 vllm_app.egg-info/SOURCES.txt

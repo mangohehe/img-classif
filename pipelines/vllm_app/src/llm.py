@@ -39,11 +39,7 @@ logger = setup_logger("ray.serve")
 
 app = FastAPI()
 
-@serve.deployment(
-    autoscaling_config=AUTOSCALING_CONFIG,
-    max_ongoing_requests=MAX_ONGOING_REQUESTS,
-)
-# Import other needed items from your project (e.g., logger)
+@staticmethod
 def extract_final_text(request_outputs):
     """
     Given an iterable of RequestOutput objects, extract the final generated text.
@@ -133,16 +129,22 @@ class VLLMDeployment:
             payload = await raw_request.json()
         except Exception as e:
             logger.error(f"Invalid JSON: {e}")
-            return JSONResponse(content={"error": "Invalid JSON payload"}, status_code=400)
+            return JSONResponse(
+                content={"error": "Invalid JSON payload", "details": str(e)},
+                status_code=400,
+            )
 
         prompt = payload.get("prompt")
         max_tokens = payload.get("max_tokens", 100)
 
         if prompt is None:
-            return JSONResponse(content={"error": "Missing 'prompt' in request"}, status_code=400)
+            return JSONResponse(
+                content={"error": "Missing 'prompt' in request"},
+                status_code=400,
+            )
 
         logger.info(f"Completion Request: prompt={prompt}, max_tokens={max_tokens}")
-        
+
         start_time = time.time()
         try:
             sampling_params = SamplingParams(max_tokens=max_tokens)
@@ -157,10 +159,16 @@ class VLLMDeployment:
             logger.info(f"Final text extracted after {total:.2f} seconds: {final_text}")
         except asyncio.TimeoutError:
             logger.error("Generation timed out")
-            return JSONResponse(content={"error": "Generation timed out"}, status_code=500)
+            return JSONResponse(
+                content={"error": "Generation timed out"},
+                status_code=500,
+            )
         except Exception as e:
             logger.error(f"Generation error: {repr(e)}")
-            return JSONResponse(content={"error": "Generation failed", "details": repr(e)}, status_code=500)
+            return JSONResponse(
+                content={"error": "Generation failed", "details": repr(e)},
+                status_code=500,
+            )
 
         return JSONResponse(content={"text": final_text})
 

@@ -14,7 +14,7 @@ def cli():
 def start():
     """Start the LLM service."""
     cli_args = {
-        "model": "NousResearch/Meta-Llama-3-8B-Instruct",
+        "model": "gpt2",
         "tensor_parallel_size": 1,
         "response_role": "assistant",
     }
