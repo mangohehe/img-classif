@@ -9,8 +9,8 @@ RESPONSE_ROLE = os.getenv("RESPONSE_ROLE", "assistant")
 
 # Ray Serve configuration
 AUTOSCALING_CONFIG = {
-    "min_replicas": int(os.getenv("MIN_REPLICAS", "1")),
-    "max_replicas": int(os.getenv("MAX_REPLICAS", "1")),
+    "min_replicas": int(os.getenv("MIN_REPLICAS", "2")),
+    "max_replicas": int(os.getenv("MAX_REPLICAS", "2")),
     "target_ongoing_requests": int(os.getenv("TARGET_ONGOING_REQUESTS", "5")),
 }
 MAX_ONGOING_REQUESTS = int(os.getenv("MAX_ONGOING_REQUESTS", "1"))

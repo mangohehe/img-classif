@@ -199,12 +199,12 @@ def build_app(cli_args: Dict[str, str]) -> serve.Application:
 
     tp = engine_args.tensor_parallel_size
     logger.info(f"Tensor parallelism = {tp}")
-    pg_resources = [{"CPU": 2}] * 4 
+    
     # for i in range(tp):
     #    pg_resources.append({"CPU": 1, accelerator: 1})  # for the vLLM actors
-
+    pg_resources = [{"CPU": 4}] * 1 
     return VLLMDeployment.options(
-        placement_group_bundles=pg_resources, placement_group_strategy="SPREAD"
+       num_replicas=1,placement_group_bundles=pg_resources, placement_group_strategy="SPREAD"
     ).bind(
         engine_args,
         parsed_args.response_role,

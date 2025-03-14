@@ -7,7 +7,7 @@ from llm import build_app
 
 def main():
     # Initialize Ray
-    ray.init(address="auto", num_cpus=10)
+    ray.init(address="auto", num_cpus=8)
 
     # Define CLI arguments
     cli_args = {

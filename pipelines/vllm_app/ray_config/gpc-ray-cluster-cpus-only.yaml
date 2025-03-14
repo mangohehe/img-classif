@@ -45,10 +45,10 @@ available_node_types:
     resources: {"CPU": 4}
 
   worker_node:
-    min_workers: 2  # At least one worker node will start
-    max_workers: 2  # Can scale up to three worker nodes based on workload
+    min_workers: 1  # At least one worker node will start
+    max_workers: 1  # Can scale up to three worker nodes based on workload
     node_config:
-      machineType: t2a-standard-2
+      machineType: t2a-standard-4
       disks:
         - boot: true
           autoDelete: true
@@ -61,7 +61,7 @@ available_node_types:
         - email: ray-autoscaler-sa-v1@llm-ft-442520.iam.gserviceaccount.com
           scopes:
             - https://www.googleapis.com/auth/cloud-platform
-    resources: {"CPU": 2}
+    resources: {"CPU": 4}
 # Specify the node type of the head node (as configured above).
 head_node_type: head_node
 
