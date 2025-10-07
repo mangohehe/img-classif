@@ -1,4 +1,4 @@
-DATA_DIRECTORY: '../input/dataset1024'
+DATA_DIRECTORY: '/home/fenggao/github/img-classif/input/dataset1024'
 
 SEED: 42
 NUM_WORKERS: 0

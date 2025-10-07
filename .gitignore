@@ -1,31 +1,86 @@
-# ignore all logs
-*.log
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
 
-# ignore pycache
-*__pycache__
-
-# ignore pth
-*.pth
-
-# ignore data
-*.npy
-*.png
-
-# ignore jupyter jopascripts
+# Jupyter Notebook
+.ipynb_checkpoints
 *.ipynb_checkpoints*
-input/dataset1024
-.DS_Store
-/unet_pipeline/experiments/albunet_valid/checkpoints
-/unet_pipeline/.configs
-/unet_pipeline/image_classif.egg-info
-/unet_pipeline/image_clasif.egg-info
-/unet_pipeline/my_ray_project.egg-info
-/unet_pipeline/train/experiments/albunet_valid/checkpoints
-/pipelines/.configs
-/unet_pipeline/image_classif/img_classif.egg-info
-/unet_pipeline/image_classif/img_classif.egg-info
-/unet_pipeline/image_classif/img_classif.egg-info
-/pipelines/train/experiments/albunet_valid/checkpoints
-/unet_pipeline/image_classif/img_classif.egg-info
-/pipelines/pneumothorax/pipelines.egg-info
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+
+# Model files and checkpoints (LARGE)
+*.pth
+*.pt
+*.ckpt
+*.weights
+*.h5
+
+# Experiments output (LARGE - 36GB)
+/experiments/
+/pipelines/train/experiments/albunet_valid/checkpoints/
+/pipelines/train/experiments/albunet_valid/results/
+
+# Data files (LARGE)
+*.npy
+*.npz
+*.pkl
+*.pickle
+
+# Images (dataset images are large)
+*.png
+*.jpg
+*.jpeg
+*.JPEG
+*.gif
+*.bmp
+*.tif
+*.tiff
+
+# Dataset directories
+/input/dataset1024/
+/input/dataset1024_matched/
+
+# Local development
+/local-setup/_backup_before_cleanup/
+/local-setup/*.ipynb_checkpoints/
+
+# Temporary files
+*.tmp
+*.temp
 *.bak
+*.swp
+*.DS_Store
+
+# Ray/distributed computing
+/pipelines/.configs
+/unet_pipeline/
+
+# Package build artifacts
+*.egg-info
+my_ray_project.egg-info
+pipelines.egg-info
+
+# Models and utilities (symlinks)
+/pipelines/train/models
+/pipelines/train/transforms
+/pipelines/train/utils/
